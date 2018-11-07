@@ -21,7 +21,8 @@ abstract class EDIFormat
 	{
 		global $conf;
 
-		$tmpCSVPath = DOL_DATA_ROOT . '/atgpconnector/temp/' . dol_print_date(dol_now(), '%Y%m%d%H%M%S') . '.csv';
+		$filename = $this->object->ref . '_' . dol_print_date(dol_now(), '%Y%m%d_%H%M%S') . '.csv';
+		$tmpCSVPath = DOL_DATA_ROOT . '/atgpconnector/temp/' . $filename;
 
 		$csvHandle = fopen($tmpCSVPath, 'w+');
 
