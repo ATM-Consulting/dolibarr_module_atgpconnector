@@ -67,9 +67,16 @@ class Actionsatgpconnector
 			define('INC_FROM_DOLIBARR', true);
 			dol_include_once('/atgpconnector/config.php');
 			dol_include_once('/atgpconnector/class/ediformatfac.class.php');
-			
-			$formatFAC = new EDIFormatFAC;
-			$formatFAC->put($object);
+
+			if(empty($object->thirdparty) && method_exists($object, 'fetch_thirdparty'))
+			{
+				$object->fetch_thirdparty();
+			}
+
+			$formatFAC = new EDIFormatFAC($object);
+			$formatFAC->put();
+
+			// TODO Gestion d'erreurs
 		}
 	}
 

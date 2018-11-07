@@ -4,8 +4,20 @@ abstract class EDIFormat
 {
 	public static $remotePath = '/';
 	public static $TSegments = array();
+	public $object;
 
-	public final function put(CommonObject $object)
+	public function __construct(CommonObject &$object)
+	{
+		$this->object = &$object;
+		$this->afterObjectLoaded();
+	}
+
+
+	public abstract function afterObjectLoaded();
+
+	// TODO parse()
+
+	public final function put()
 	{
 		global $conf;
 
@@ -18,7 +30,7 @@ abstract class EDIFormat
 			return false;
 		}
 
-		fputcsv($csvHandle, array('@GP', 'WEB@EDI', 'INVOIC', 'STANDARD'), ATGPCONNECTOR_CSV_SEPARATOR); // TODO Extract it
+		$object = &$this->object;
 
 		foreach(static::$TSegments as $segmentID => $TSegmentDescriptor)
 		{
@@ -27,9 +39,19 @@ abstract class EDIFormat
 
 			$segmentInstance = new $segmentClass;
 
-			$TData = $segmentInstance->get($segmentObj);
-
-			fputcsv($csvHandle, $TData, ATGPCONNECTOR_CSV_SEPARATOR);
+			if(! empty($TSegmentDescriptor['multiple']))
+			{
+				foreach($segmentObj as $key => $segmentSubObj)
+				{
+					$TData = $segmentInstance->get($segmentSubObj, $key);
+					fputcsv($csvHandle, $TData, ATGPCONNECTOR_CSV_SEPARATOR);
+				}
+			}
+			else
+			{
+				$TData = $segmentInstance->get($segmentObj);
+				fputcsv($csvHandle, $TData, ATGPCONNECTOR_CSV_SEPARATOR);
+			}
 		}
 
 		fputcsv($csvHandle, array('END'), ATGPCONNECTOR_CSV_SEPARATOR);
@@ -51,19 +73,21 @@ abstract class EDIFormat
 		return true;
 	}
 }
-	
+
 
 abstract class EDIFormatSegment
 {
 	public static $TFields = array();
 
-	public final function get(CommonObject $object)
+	public final function get($object, $key = null)
 	{
+		global $mysoc, $conf;
+
 		$TData = array();
 
 		foreach(static::$TFields as $index => $TFieldDescritor)
 		{
-			$TData[] = substr(eval('return ' . $TFieldDescritor['data'] . ';'), 0, $TFieldDescritor['maxLength']);
+			$TData[] = substr(trim(eval('return ' . $TFieldDescritor['data'] . ';')), 0, $TFieldDescritor['maxLength']);
 		}
 
 		return $TData;
