@@ -64,6 +64,8 @@ class Actionsatgpconnector
 	{
 		if ($this->_canHandleEDI($parameters, $object, $action, $hookmanager) && $action === 'send-to-chorus')
 		{
+			define('INC_FROM_DOLIBARR', true);
+			dol_include_once('/atgpconnector/config.php');
 			dol_include_once('/atgpconnector/class/ediformatfac.class.php');
 			
 			$formatFAC = new EDIFormatFAC;
