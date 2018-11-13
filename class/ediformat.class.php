@@ -31,12 +31,17 @@ abstract class EDIFormat
 			return false;
 		}
 
-		$object = &$this->object;
+		$object = &$this->object; // NE PAS SUPPRIMER, est utilisé dans les eval()
 
 		foreach(static::$TSegments as $segmentID => $TSegmentDescriptor)
 		{
 			$segmentObj = eval('return '.$TSegmentDescriptor['object'].';');
 			$segmentClass = static::class . 'Segment' . $segmentID;
+
+			if(! class_exists($segmentClass))
+			{
+				continue; // TODO gestion d'erreur
+			}
 
 			$segmentInstance = new $segmentClass;
 
