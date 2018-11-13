@@ -64,13 +64,21 @@ class Actionsatgpconnector
 	{
 		if ($this->_canHandleEDIFACChorus($parameters, $object, $action, $hookmanager) && $action === 'send-to-chorus')
 		{
+			global $langs;
+
 			define('INC_FROM_DOLIBARR', true);
 			dol_include_once('/atgpconnector/config.php');
 			dol_include_once('/atgpconnector/class/ediformatfac.class.php');
 
-			$this->_sendOneInvoiceToChorus($object);
+			$langs->load('atgpconnector@atgpconnector');
+			$documentSent = $this->_sendOneInvoiceToChorus($object);
 
-			// TODO Gestion d'erreurs
+			if($documentSent)
+			{
+				setEventMessage($langs->trans('ATGPC_FACUploadSuccess', $object->ref));
+			}
+
+			return $documentSent ? 0 : -1;
 		}
 	}
 
@@ -140,11 +148,14 @@ class Actionsatgpconnector
 
 		if ($this->_canHandleEDIFACChorus($parameters, $object, $action, $hookmanager, 'invoicelist', true) && $massaction === 'send-to-chorus')
 		{
+			global $langs;
+
 			define('INC_FROM_DOLIBARR', true);
 			dol_include_once('/atgpconnector/config.php');
 			dol_include_once('/atgpconnector/class/ediformatfac.class.php');
 
 			$TIDInvoices = $parameters['toselect'];
+			$nbUploadsDone = 0;
 
 			foreach($TIDInvoices as $invoiceID)
 			{
@@ -153,11 +164,19 @@ class Actionsatgpconnector
 
 				if($this->_canHandleEDIFACChorus($parameters, $invoice, $action, $hookmanager, 'invoicelist'))
 				{
-					$this->_sendOneInvoiceToChorus($invoice);
+					if($this->_sendOneInvoiceToChorus($invoice))
+					{
+						$nbUploadsDone++;
+					}
+				} else {
+					setEventMessage($langs->trans('ATGPC_InvoiceNotChorusEligible', $invoice->ref));
 				}
 			}
 
-			// TODO Gestion d'erreurs
+			if($nbUploadsDone > 0)
+			{
+				setEventMessage($langs->trans('ATGPC_NInvoicesSuccesfullySent', $nbUploadsDone));
+			}
 		}
 	}
 
@@ -217,9 +236,17 @@ class Actionsatgpconnector
 
 	function _sendOneInvoiceToChorus(Facture $invoice)
 	{
-		$formatFAC = new EDIFormatFAC($invoice);
-		$formatFAC->put();
+		global $langs;
 
+		$formatFAC = new EDIFormatFAC($invoice);
+		$documentUploaded = $formatFAC->put();
+
+		if(! $documentUploaded)
+		{
+			setEventMessages($langs->trans('ATGPC_ErrorForInvoice', $invoice->ref), $formatFAC->TErrors, 'errors');
+		}
+
+		return $documentUploaded;
 		// TODO envois groupés
 	}
 }

@@ -25,6 +25,18 @@ ATGPCONNECTOR_FORMAT_FAC_CHORUS_CATEGORY=Catégorie de clients/prospects impact�
 
 ATGPC_SendToChorus=Déposer sur Chorus
 
+#Errors
+ATGPC_FACUploadSuccess=Envoi de la facture %s effectué avec succès
+ATGPC_InvoiceNotChorusEligible=Facture %s non éligible au dépôt sur Chorus
+ATGPC_NInvoicesSuccesfullySent=%s facture(s) ont été déposée(s) sur Chorus avec succès
+ATGPC_ErrorForInvoice=Erreur à l'envoi de la facture %s
+ATGPC_CouldNotOpenTempCSVFile=Impossible d'ouvrir le fichier CSV temporaire '%s'
+ATGPC_CouldNotGenerateCSVFileSegmentDescriptorNotFound=Impossible de générer le fichier CSV temporaire '%s' : descripteur du segement %s introuvable
+ATGPC_CouldNotOpenFTPConnection=Impossible d'ouvrir la connexion FTP
+ATGPC_FTPAuthentificationFailed=Impossible d'authentifier la connexion FTP
+ATGPC_FTPFailedToUploadFile=Impossible de déposer le fichier local '%s' vers le chemin distant '%s'
+
+
 # MENU
 TopMenuatgpconnector=atgpconnector
 

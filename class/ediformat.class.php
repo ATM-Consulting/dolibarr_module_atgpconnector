@@ -5,6 +5,7 @@ abstract class EDIFormat
 	public static $remotePath = '/';
 	public static $TSegments = array();
 	public $object;
+	public $TErrors = array();
 
 	public function __construct(CommonObject &$object)
 	{
@@ -28,6 +29,7 @@ abstract class EDIFormat
 
 		if($csvHandle === false)
 		{
+			$this->handleError('ATGPC_CouldNotOpenTempCSVFile', $tmpCSVPath);
 			return false;
 		}
 
@@ -40,6 +42,7 @@ abstract class EDIFormat
 
 			if(! class_exists($segmentClass))
 			{
+				$this->handleError('ATGPC_CouldNotGenerateCSVFileSegmentDescriptorNotFound', $tmpCSVPath, $segmentID);
 				continue; // TODO gestion d'erreur
 			}
 
@@ -64,23 +67,48 @@ abstract class EDIFormat
 
 		fclose($csvHandle);
 
-		// TODO bouger dans une méthode send();
+		// TODO bouger dans une méthode send()
 		if(empty($conf->global->ATGPCONNECTOR_FTP_DISABLE_ALL_TRANSFERS)) // conf cachée
 		{
 			$ftpPort = ! empty($conf->global->ATGPCONNECTOR_FTP_PORT) ? $conf->global->ATGPCONNECTOR_FTP_PORT : 21;
 
 			$ftpHandle = ftp_connect($conf->global->ATGPCONNECTOR_FTP_HOST, $ftpPort);
+			if($ftpHandle === false)
+			{
+				$this->appendError('ATGPC_CouldNotOpenFTPConnection');
+				return false;
+			}
 
 			$ftpLogged = ftp_login($ftpHandle, $conf->global->ATGPCONNECTOR_FTP_USER, $conf->global->ATGPCONNECTOR_FTP_PASS);
 
-			$putReturn = ftp_put($ftpHandle, static::$remotePath . basename($tmpCSVPath), $tmpCSVPath, FTP_ASCII);
+			if(! $ftpLogged)
+			{
+				$this->appendError('ATGPC_FTPAuthentificationFailed');
+				return false;
+			}
+
+			$remoteFilePath =  static::$remotePath . basename($tmpCSVPath);
+
+			$putWorked = ftp_put($ftpHandle, $remoteFilePath, $tmpCSVPath, FTP_ASCII);
+
+			if(! $putWorked)
+			{
+				$this->appendError('ATGPC_FTPFailedToUploadFile', $tmpCSVPath, $remoteFilePath);
+				return false;
+			}
 
 			ftp_close($ftpHandle);
 		}
 
-		// TODO Gestion d'erreur
-
 		return true;
+	}
+
+
+	protected function appendError()
+	{
+		global $langs;
+
+		$this->TErrors[] = call_user_func_array(array($langs, 'trans'), func_get_args());
 	}
 }
 
@@ -88,6 +116,7 @@ abstract class EDIFormat
 abstract class EDIFormatSegment
 {
 	public static $TFields = array();
+	public $TErrors = array();
 
 	public final function get($object, $key = null)
 	{
@@ -99,6 +128,8 @@ abstract class EDIFormatSegment
 		{
 			$TData[] = substr(trim(eval('return ' . $TFieldDescritor['data'] . ';')), 0, $TFieldDescritor['maxLength']);
 		}
+
+		// TODO Gestion d'erreurs
 
 		return $TData;
 	}
