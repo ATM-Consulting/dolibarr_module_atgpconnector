@@ -64,17 +64,21 @@ abstract class EDIFormat
 
 		fclose($csvHandle);
 
-		$ftpPort = ! empty($conf->global->ATGPCONNECTOR_FTP_PORT) ? $conf->global->ATGPCONNECTOR_FTP_PORT : 21;
+		// TODO bouger dans une méthode send();
+		if(empty($conf->global->ATGPCONNECTOR_FTP_DISABLE_ALL_TRANSFERS)) // conf cachée
+		{
+			$ftpPort = ! empty($conf->global->ATGPCONNECTOR_FTP_PORT) ? $conf->global->ATGPCONNECTOR_FTP_PORT : 21;
 
-		$ftpHandle = ftp_connect($conf->global->ATGPCONNECTOR_FTP_HOST, $ftpPort);
+			$ftpHandle = ftp_connect($conf->global->ATGPCONNECTOR_FTP_HOST, $ftpPort);
 
-		$ftpLogged = ftp_login($ftpHandle, $conf->global->ATGPCONNECTOR_FTP_USER, $conf->global->ATGPCONNECTOR_FTP_PASS);
+			$ftpLogged = ftp_login($ftpHandle, $conf->global->ATGPCONNECTOR_FTP_USER, $conf->global->ATGPCONNECTOR_FTP_PASS);
 
-		$putReturn = ftp_put($ftpHandle, static::$remotePath . basename($tmpCSVPath), $tmpCSVPath, FTP_ASCII);
+			$putReturn = ftp_put($ftpHandle, static::$remotePath . basename($tmpCSVPath), $tmpCSVPath, FTP_ASCII);
+
+			ftp_close($ftpHandle);
+		}
 
 		// TODO Gestion d'erreur
-
-		ftp_close($ftpHandle);
 
 		return true;
 	}
