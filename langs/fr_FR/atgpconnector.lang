@@ -18,6 +18,9 @@ ATGPCONNECTOR_FTP_PASS_desc=Laissez vide pour ne pas redéfinir.
 ATGPC_ActivatedModes=Modes EDI
 ATGPCONNECTOR_DEV_MODE=Mode de tests
 ATGPCONNECTOR_FORMAT_FAC=Format factures FAC@EDI
+ATGPCONNECTOR_FORMAT_FAC_CHORUS=Mode Chorus
+ATGPCONNECTOR_FORMAT_FAC_CHORUS_CATEGORY=Catégorie de clients/prospects impactés par le mode Chorus
+
 
 
 ATGPC_SendToChorus=Déposer sur Chorus

@@ -112,6 +112,34 @@ setup_print_title('ATGPC_ActivatedModes');
 
 setup_print_on_off('ATGPCONNECTOR_DEV_MODE');
 setup_print_on_off('ATGPCONNECTOR_FORMAT_FAC');
+setup_print_on_off('ATGPCONNECTOR_FORMAT_FAC_CHORUS');
+
+
+$var=!$var;
+
+print '<tr '.$bc[$var].'>';
+print '<td>';
+if(!empty($help)){
+	print $form->textwithtooltip( ($title?$title:$langs->trans('ATGPCONNECTOR_FORMAT_FAC_CHORUS_CATEGORY')) , $langs->trans($help),2,1,img_help(1,''));
+}
+else {
+	print $title?$title:$langs->trans('ATGPCONNECTOR_FORMAT_FAC_CHORUS_CATEGORY');
+}
+
+if(!empty($desc))
+{
+	print '<br><small>'.$langs->trans($desc).'</small>';
+}
+print '</td>';
+print '<td align="center" width="20">&nbsp;</td>';
+print '<td align="center" width="300">';
+print '<form method="POST" action="'.$_SERVER['PHP_SELF'].'">';
+print '<input type="hidden" name="token" value="'.$_SESSION['newtoken'].'">';
+print '<input type="hidden" name="action" value="set_ATGPCONNECTOR_FORMAT_FAC_CHORUS_CATEGORY">';
+print $form->select_all_categories('customer', $conf->global->ATGPCONNECTOR_FORMAT_FAC_CHORUS_CATEGORY, 'ATGPCONNECTOR_FORMAT_FAC_CHORUS_CATEGORY');
+print '<input type="submit" class="butAction" value="'.$langs->trans("Modify").'">';
+print '</form>';
+print '</td></tr>';
 
 print '</table>';
 

@@ -62,16 +62,11 @@ class Actionsatgpconnector
 	 */
 	function doActions($parameters, &$object, &$action, $hookmanager)
 	{
-		if ($this->_canHandleEDI($parameters, $object, $action, $hookmanager) && $action === 'send-to-chorus')
+		if ($this->_canHandleEDIFACChorus($parameters, $object, $action, $hookmanager) && $action === 'send-to-chorus')
 		{
 			define('INC_FROM_DOLIBARR', true);
 			dol_include_once('/atgpconnector/config.php');
 			dol_include_once('/atgpconnector/class/ediformatfac.class.php');
-
-			if(empty($object->thirdparty) && method_exists($object, 'fetch_thirdparty'))
-			{
-				$object->fetch_thirdparty();
-			}
 
 			$formatFAC = new EDIFormatFAC($object);
 			$formatFAC->put();
@@ -94,7 +89,7 @@ class Actionsatgpconnector
 	{
 		global $langs;
 
-		if ($this->_canHandleEDI($parameters, $object, $action, $hookmanager))
+		if ($this->_canHandleEDIFACChorus($parameters, $object, $action, $hookmanager))
 		{
 			$langs->load('atgpconnector@atgpconnector');
 
@@ -111,6 +106,47 @@ class Actionsatgpconnector
 	{
 		global $conf;
 
-		return in_array('invoicecard', explode(':', $parameters['context'])) && ! empty($conf->global->ATGPCONNECTOR_FORMAT_FAC) && $object->statut > Facture::STATUS_DRAFT;
+		if(empty($object->thirdparty) && method_exists($object, 'fetch_thirdparty'))
+		{
+			$object->fetch_thirdparty();
+		}
+
+		return ! empty($conf->global->ATGPCONNECTOR_FTP_HOST) && ! empty($conf->global->ATGPCONNECTOR_FTP_USER);
 	}
+
+
+	function _canHandleEDIFACChorus($parameters, &$object, &$action, $hookmanager)
+	{
+		if(! $this->_canHandleEDI($parameters, $object, $action, $hookmanager))
+		{
+			return false;
+		}
+
+		global $conf;
+
+		dol_include_once('/categories/class/categorie.class.php');
+
+		if($conf->global->ATGPCONNECTOR_FORMAT_FAC_CHORUS_CATEGORY <= 0)
+		{
+			return false;
+		}
+
+		$category = new Categorie($object->db);
+		$categoryFetchReturn = $category->fetch($conf->global->ATGPCONNECTOR_FORMAT_FAC_CHORUS_CATEGORY);
+
+		if($categoryFetchReturn <= 0)
+		{
+			return false;
+		}
+
+		return
+				in_array('invoicecard', explode(':', $parameters['context']))
+			&&	$object->statut > Facture::STATUS_DRAFT
+			&&	! empty($object->thirdparty->idprof2)
+			&&	! empty($conf->global->ATGPCONNECTOR_FORMAT_FAC)
+			&&	! empty($conf->global->ATGPCONNECTOR_FORMAT_FAC_CHORUS)
+			&&	$category->containsObject('customer', $object->thirdparty->id) > 0
+		;
+	}
+	
 }
