@@ -68,8 +68,7 @@ class Actionsatgpconnector
 			dol_include_once('/atgpconnector/config.php');
 			dol_include_once('/atgpconnector/class/ediformatfac.class.php');
 
-			$formatFAC = new EDIFormatFAC($object);
-			$formatFAC->put();
+			$this->_sendOneInvoiceToChorus($object);
 
 			// TODO Gestion d'erreurs
 		}
@@ -102,11 +101,72 @@ class Actionsatgpconnector
 	}
 
 
+	/**
+	 * Overloading the addMoreMassActions function : replacing the parent's function with the one below
+	 *
+	 * @param   array()         $parameters     Hook metadatas (context, etc...)
+	 * @param   CommonObject    &$object        The object to process (an invoice if you are in invoice module, a propale in propale's module, etc...)
+	 * @param   string          &$action        Current action (if set). Generally create or edit or null
+	 * @param   HookManager     $hookmanager    Hook manager propagated to allow calling another hook
+	 * @return  int                             < 0 on error, 0 on success, 1 to replace standard code
+	 */
+	function addMoreMassActions($parameters, &$object, &$action, $hookmanager)
+	{
+		global $langs;
+
+		if ($this->_canHandleEDIFACChorus($parameters, $object, $action, $hookmanager, 'invoicelist', true))
+		{
+			$langs->load('atgpconnector@atgpconnector');
+
+			$this->resprints = '<option value="send-to-chorus">' . $langs->trans('ATGPC_SendToChorus') . '</option>';
+		}
+
+		return 0;
+	}
+
+
+	/**
+	 * Overloading the doMassActions function : replacing the parent's function with the one below
+	 *
+	 * @param   array()         $parameters     Hook metadatas (context, etc...)
+	 * @param   CommonObject    &$object        The object to process (an invoice if you are in invoice module, a propale in propale's module, etc...)
+	 * @param   string          &$action        Current action (if set). Generally create or edit or null
+	 * @param   HookManager     $hookmanager    Hook manager propagated to allow calling another hook
+	 * @return  int                             < 0 on error, 0 on success, 1 to replace standard code
+	 */
+	function doMassActions($parameters, &$object, &$action, $hookmanager)
+	{
+		$massaction = GETPOST('massaction','alpha');
+
+		if ($this->_canHandleEDIFACChorus($parameters, $object, $action, $hookmanager, 'invoicelist', true) && $massaction === 'send-to-chorus')
+		{
+			define('INC_FROM_DOLIBARR', true);
+			dol_include_once('/atgpconnector/config.php');
+			dol_include_once('/atgpconnector/class/ediformatfac.class.php');
+
+			$TIDInvoices = $parameters['toselect'];
+
+			foreach($TIDInvoices as $invoiceID)
+			{
+				$invoice = new Facture($object->db);
+				$invoice->fetch($invoiceID);
+
+				if($this->_canHandleEDIFACChorus($parameters, $invoice, $action, $hookmanager, 'invoicelist'))
+				{
+					$this->_sendOneInvoiceToChorus($invoice);
+				}
+			}
+
+			// TODO Gestion d'erreurs
+		}
+	}
+
+
 	function _canHandleEDI($parameters, &$object, &$action, $hookmanager)
 	{
 		global $conf;
 
-		if(empty($object->thirdparty) && method_exists($object, 'fetch_thirdparty'))
+		if(! empty($object->id) && empty($object->thirdparty) && method_exists($object, 'fetch_thirdparty')) // $object->id vide si massaction
 		{
 			$object->fetch_thirdparty();
 		}
@@ -115,38 +175,51 @@ class Actionsatgpconnector
 	}
 
 
-	function _canHandleEDIFACChorus($parameters, &$object, &$action, $hookmanager)
+	function _canHandleEDIFACChorus($parameters, &$object, &$action, $hookmanager, $targetContext = 'invoicecard', $massAction = false)
 	{
-		if(! $this->_canHandleEDI($parameters, $object, $action, $hookmanager))
+		global $conf, $db;
+
+		if(
+				! $this->_canHandleEDI($parameters, $object, $action, $hookmanager)
+			||	! in_array($targetContext, explode(':', $parameters['context']))
+			||	empty($conf->global->ATGPCONNECTOR_FORMAT_FAC)
+			||	empty($conf->global->ATGPCONNECTOR_FORMAT_FAC_CHORUS)
+		)
 		{
 			return false;
 		}
 
-		global $conf;
-
-		dol_include_once('/categories/class/categorie.class.php');
-
-		if($conf->global->ATGPCONNECTOR_FORMAT_FAC_CHORUS_CATEGORY <= 0)
+		if(! $massAction)
 		{
-			return false;
+			dol_include_once('/categories/class/categorie.class.php');
+
+			if($conf->global->ATGPCONNECTOR_FORMAT_FAC_CHORUS_CATEGORY <= 0)
+			{
+				return false;
+			}
+
+			$category = new Categorie($db);
+			$categoryFetchReturn = $category->fetch($conf->global->ATGPCONNECTOR_FORMAT_FAC_CHORUS_CATEGORY);
+
+			if($categoryFetchReturn <= 0)
+			{
+				return false;
+			}
 		}
 
-		$category = new Categorie($object->db);
-		$categoryFetchReturn = $category->fetch($conf->global->ATGPCONNECTOR_FORMAT_FAC_CHORUS_CATEGORY);
-
-		if($categoryFetchReturn <= 0)
-		{
-			return false;
-		}
-
-		return
-				in_array('invoicecard', explode(':', $parameters['context']))
-			&&	$object->statut > Facture::STATUS_DRAFT
+		return $massAction || (
+				$object->statut > Facture::STATUS_DRAFT
 			&&	! empty($object->thirdparty->idprof2)
-			&&	! empty($conf->global->ATGPCONNECTOR_FORMAT_FAC)
-			&&	! empty($conf->global->ATGPCONNECTOR_FORMAT_FAC_CHORUS)
 			&&	$category->containsObject('customer', $object->thirdparty->id) > 0
-		;
+		);
 	}
-	
+
+
+	function _sendOneInvoiceToChorus(Facture $invoice)
+	{
+		$formatFAC = new EDIFormatFAC($invoice);
+		$formatFAC->put();
+
+		// TODO envois groupés
+	}
 }
