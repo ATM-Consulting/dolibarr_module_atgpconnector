@@ -242,19 +242,19 @@ class EDIFormatFACSegmentENT extends EDIFormatSegment
 		)
 		, 15 => array (
 			'label' => 'Date d\'échéance JJ/MM/AAA'
-			, 'data' => 'dol_print_date($object->datef, "%d/%m/%Y")' // TODO
+			, 'data' => 'dol_print_date($object->date_lim_reglement, "%d/%m/%Y")'
 			, 'maxLength' => 10
 			, 'required' => true
 		)
 		, 16 => array (
 			'label' => 'Type de document (Facture/Avoir)'
-			, 'data' => '"Facture"' // TODO
+			, 'data' => '$object->type == Facture::TYPE_CREDIT_NOTE ? "Avoir" : "Facture"'
 			, 'maxLength' => 7
 			, 'required' => true
 		)
 		, 17 => array (
 			'label' => 'Code monnaie (EUR pour Euro)'
-			, 'data' => '"EUR"' // TODO
+			, 'data' => '! empty($object->multicurrency_code) ? $object->multicurrency_code : $conf->currency'
 			, 'maxLength' => 3
 			, 'required' => true
 		)
@@ -279,7 +279,7 @@ class EDIFormatFACSegmentENT extends EDIFormatSegment
 			, 'maxLength' => 10
 		)
 		, 22 => array (
-			'label' => 'Pourcentage escompte (préférz le poucentage au montant)'
+			'label' => 'Pourcentage escompte (préférez le poucentage au montant)'
 			, 'data' => ''
 			, 'maxLength' => 6
 		)
@@ -289,7 +289,7 @@ class EDIFormatFACSegmentENT extends EDIFormatSegment
 			, 'maxLength' => 3
 		)
 		, 24 => array (
-			'label' => 'Poucentage pénalité'
+			'label' => 'Pourcentage pénalité'
 			, 'data' => ''
 			, 'maxLength' => 6
 		)
@@ -356,7 +356,7 @@ class EDIFormatFACSegmentPAR extends EDIFormatSegment
 		)
 		, 2 => array (
 			'label' => 'Code EAN client (commandé par)'
-			, 'data' => '$object->thirdparty->idprof2'
+			, 'data' => 'str_replace(" ", "", $object->thirdparty->idprof2)'
 			, 'maxLength' => 13
 			, 'required' => true
 		)
@@ -366,7 +366,7 @@ class EDIFormatFACSegmentPAR extends EDIFormatSegment
 			, 'maxLength' => 35
 		)
 		, 4 => array (
-			'label' => 'Code EAN founisseur (commande à)'
+			'label' => 'Code EAN fournisseur (commande à)'
 			, 'data' => '' // TODO
 			, 'maxLength' => 13
 			, 'required' => true
@@ -378,7 +378,7 @@ class EDIFormatFACSegmentPAR extends EDIFormatSegment
 		)
 		, 6 => array (
 			'label' => 'Code EAN client livré'
-			, 'data' => '$object->thirdparty->idprof2' // TODO
+			, 'data' => 'str_replace(" ", "", $object->thirdparty->idprof2)' // TODO
 			, 'maxLength' => 13
 			, 'required' => true
 		)
@@ -389,7 +389,7 @@ class EDIFormatFACSegmentPAR extends EDIFormatSegment
 		)
 		, 8 => array (
 			'label' => 'Code EAN client facturé'
-			, 'data' => '$object->thirdparty->idprof2' // TODO
+			, 'data' => 'str_replace(" ", "", $object->thirdparty->idprof2)' // TODO
 			, 'maxLength' => 13
 			, 'required' => true
 		)
@@ -495,7 +495,7 @@ class EDIFormatFACSegmentLIG extends EDIFormatSegment
 		)
 		, 10 => array (
 			'label' => 'Code monnaie (EUR = euro)'
-			, 'data' => '"EUR"'
+			, 'data' => '! empty($object->multicurrency_code) ? $object->multicurrency_code : $conf->currency'
 			, 'maxLength' => 3
 			, 'required' => true
 		)
@@ -772,12 +772,12 @@ class EDIFormatFACSegmentPIE extends EDIFormatSegment
 		)
 		, 10 => array(
 			'label' => 'Montant Acompte'
-			, 'data' => ''
+			, 'data' => '' // TODO
 			, 'maxLength' => 10
 		)
 		, 11 => array(
 			'label' => 'Montant Payable (obligatoire si gestion acompte)'
-			, 'data' => ''
+			, 'data' => '' // TODO
 			, 'maxLength' => 10
 		)
 	);
