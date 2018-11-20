@@ -335,7 +335,7 @@ class modatgpconnector extends DolibarrModules
 		
 		define('INC_FROM_DOLIBARR',true);
 
-		require dol_buildpath('/atgpconnector/script/create-maj-base.php');
+		// require dol_buildpath('/atgpconnector/script/create-maj-base.php');
 
 		$result=$this->_load_tables('/atgpconnector/sql/');
 
