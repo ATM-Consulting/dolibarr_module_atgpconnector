@@ -241,12 +241,25 @@ class Actionsatgpconnector
 		$formatFAC = new EDIFormatFAC($invoice);
 		$documentUploaded = $formatFAC->put();
 
-		if(! $documentUploaded)
+		if($documentUploaded)
+		{
+			$this->_insertAutomaticActionComm($invoice, 'INVOICE_SENT_TO_CHORUS');
+		}
+		else
 		{
 			setEventMessages($langs->trans('ATGPC_ErrorForInvoice', $invoice->ref), $formatFAC->TErrors, 'errors');
 		}
 
-		return $documentUploaded;
 		// TODO envois groupés
+
+		return $documentUploaded;
+	}
+
+
+	function _insertAutomaticActionComm(&$object, $actionKey)
+	{
+		global $user;
+
+		$object->call_trigger($actionKey, $user);
 	}
 }

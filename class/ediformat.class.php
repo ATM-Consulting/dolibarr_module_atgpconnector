@@ -16,7 +16,12 @@ abstract class EDIFormat
 
 	public abstract function afterObjectLoaded();
 
+
+	public abstract function afterCSVGenerated($tmpPath);
+
+
 	// TODO parse()
+
 
 	public final function put()
 	{
@@ -66,6 +71,8 @@ abstract class EDIFormat
 		fputcsv($csvHandle, array('END'), ATGPCONNECTOR_CSV_SEPARATOR);
 
 		fclose($csvHandle);
+
+		$this->afterCSVGenerated($tmpCSVPath);
 
 		// TODO A bouger dans une méthode send()
 		if(empty($conf->global->ATGPCONNECTOR_FTP_DISABLE_ALL_TRANSFERS)) // conf cachée

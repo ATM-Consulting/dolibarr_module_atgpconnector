@@ -36,6 +36,9 @@ ATGPC_CouldNotOpenFTPConnection=Impossible d'ouvrir la connexion FTP
 ATGPC_FTPAuthentificationFailed=Impossible d'authentifier la connexion FTP
 ATGPC_FTPFailedToUploadFile=Impossible de déposer le fichier local '%s' vers le chemin distant '%s'
 
+#Events
+INVOICE_SENT_TO_CHORUSInDolibarr=Facture déposée sur Chorus
+
 
 # MENU
 TopMenuatgpconnector=atgpconnector

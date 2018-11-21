@@ -106,6 +106,17 @@ class EDIFormatFAC extends EDIFormat
 
 		$this->object->_TTVA = $TTVA;
 	}
+
+
+	public function afterCSVGenerated($tmpPath)
+	{
+		$fileName = basename($tmpPath);
+
+		$this->object->attachedfiles = array(
+			'paths' => array($tmpPath)
+			, 'names' => array($fileName)
+		);
+	}
 }
 
 
