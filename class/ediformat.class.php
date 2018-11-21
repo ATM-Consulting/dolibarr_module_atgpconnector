@@ -29,7 +29,7 @@ abstract class EDIFormat
 
 		if($csvHandle === false)
 		{
-			$this->handleError('ATGPC_CouldNotOpenTempCSVFile', $tmpCSVPath);
+			$this->appendError('ATGPC_CouldNotOpenTempCSVFile', $tmpCSVPath);
 			return false;
 		}
 
@@ -42,8 +42,8 @@ abstract class EDIFormat
 
 			if(! class_exists($segmentClass))
 			{
-				$this->handleError('ATGPC_CouldNotGenerateCSVFileSegmentDescriptorNotFound', $tmpCSVPath, $segmentID);
-				continue; // TODO gestion d'erreur
+				$this->appendError('ATGPC_CouldNotGenerateCSVFileSegmentDescriptorNotFound', $tmpCSVPath, $segmentID);
+				continue;
 			}
 
 			$segmentInstance = new $segmentClass;
@@ -67,7 +67,7 @@ abstract class EDIFormat
 
 		fclose($csvHandle);
 
-		// TODO bouger dans une méthode send()
+		// TODO A bouger dans une méthode send()
 		if(empty($conf->global->ATGPCONNECTOR_FTP_DISABLE_ALL_TRANSFERS)) // conf cachée
 		{
 			$ftpPort = ! empty($conf->global->ATGPCONNECTOR_FTP_PORT) ? $conf->global->ATGPCONNECTOR_FTP_PORT : 21;
