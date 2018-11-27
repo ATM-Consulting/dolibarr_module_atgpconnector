@@ -68,7 +68,7 @@ class Actionsatgpconnector
 
 			define('INC_FROM_DOLIBARR', true);
 			dol_include_once('/atgpconnector/config.php');
-			dol_include_once('/atgpconnector/class/ediformatfac.class.php');
+			dol_include_once('/atgpconnector/class/ediformatfacchorus.class.php');
 
 			$langs->load('atgpconnector@atgpconnector');
 			$documentSent = $this->_sendOneInvoiceToChorus($object);
@@ -152,7 +152,7 @@ class Actionsatgpconnector
 
 			define('INC_FROM_DOLIBARR', true);
 			dol_include_once('/atgpconnector/config.php');
-			dol_include_once('/atgpconnector/class/ediformatfac.class.php');
+			dol_include_once('/atgpconnector/class/ediformatfacchorus.class.php');
 
 			$TIDInvoices = $parameters['toselect'];
 			$nbUploadsDone = 0;
@@ -238,7 +238,7 @@ class Actionsatgpconnector
 	{
 		global $langs;
 
-		$formatFAC = new EDIFormatFAC($invoice);
+		$formatFAC = new EDIFormatFACChorus($invoice);
 		$documentUploaded = $formatFAC->put();
 
 		if($documentUploaded)
