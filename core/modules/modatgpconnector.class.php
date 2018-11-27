@@ -150,7 +150,18 @@ class modatgpconnector extends DolibarrModules
         	$conf->atgpconnector=new stdClass();
         	$conf->atgpconnector->enabled=0;
         }
-		$this->dictionaries=array();
+		$this->dictionaries=array(
+			'langs' => 'atgpconnector@atgpconnector'
+			, 'tabname' => array(MAIN_DB_PREFIX . 'c_atgpconnector_status')
+			, 'tablib' => array('ATGPC_ATGPStatuses')
+			, 'tabsql' => array('SELECT rowid, code, label, active FROM ' . MAIN_DB_PREFIX . 'c_atgpconnector_status')
+			, 'tabsqlsort' => array('rowid ASC')
+			, 'tabfield' => array('code,label')
+			, 'tabfieldvalue' => array('code,label')
+			, 'tabfieldinsert' => array('code,label')
+			, 'tabrowid' => array('rowid')
+			, 'tabcond' => array($conf->atgpconnector->enabled)
+		);
         /* Example:
         if (! isset($conf->atgpconnector->enabled)) $conf->atgpconnector->enabled=0;	// This is to avoid warnings
         $this->dictionaries=array(
@@ -338,6 +349,8 @@ class modatgpconnector extends DolibarrModules
 
 		// require dol_buildpath('/atgpconnector/script/create-maj-base.php');
 
+		$this->_addExtrafields();
+
 		$result=$this->_load_tables('/atgpconnector/sql/');
 
 		return $this->_init($sql, $options);
@@ -358,4 +371,13 @@ class modatgpconnector extends DolibarrModules
 		return $this->_remove($sql, $options);
 	}
 
+
+	function _addExtrafields()
+	{
+		dol_include_once('/core/class/extrafields.class.php');
+
+		$extrafields = new ExtraFields($this->db);
+
+		$ret = $extrafields->addExtraField('atgp_status', 'ATGPC_ATGPStatus', 'sellist', 1, '', 'facture', 0, 0, '', array('options' => array('c_atgpconnector_status:label:rowid::active=1' => null)), 0, '', -1, 0, '', '', 'atgpconnector@atgpconnector');
+	}
 }

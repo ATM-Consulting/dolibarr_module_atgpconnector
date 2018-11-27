@@ -24,6 +24,8 @@ ATGPCONNECTOR_FORMAT_FAC_CHORUS_CATEGORY=Catégorie de clients/prospects impact�
 
 
 ATGPC_SendToChorus=Déposer sur Chorus
+ATGPC_ATGPStatus=Statut @GP
+ATGPC_ATGPStatuses=Statuts @GP
 
 #Errors
 ATGPC_FACUploadSuccess=Envoi de la facture %s effectué avec succès
