@@ -185,9 +185,17 @@ class Actionsatgpconnector
 	{
 		global $conf;
 
-		if(! empty($object->id) && empty($object->thirdparty) && method_exists($object, 'fetch_thirdparty')) // $object->id vide si massaction
+		if(! empty($object->id)) // $object->id vide si massaction
 		{
-			$object->fetch_thirdparty();
+			if(empty($object->thirdparty) && method_exists($object, 'fetch_thirdparty'))
+			{
+				$object->fetch_thirdparty();
+			}
+
+			if(empty($object->array_options) && method_exists($object, 'fetch_optionals'))
+			{
+				$object->fetch_optionals();
+			}
 		}
 
 		return ! empty($conf->global->ATGPCONNECTOR_FTP_HOST) && ! empty($conf->global->ATGPCONNECTOR_FTP_USER);
@@ -228,13 +236,14 @@ class Actionsatgpconnector
 
 		return $massAction || (
 				$object->statut > Facture::STATUS_DRAFT
+			&&	empty($object->array_options['options_atgp_status'])
 			&&	! empty($object->thirdparty->idprof2)
 			&&	$category->containsObject('customer', $object->thirdparty->id) > 0
 		);
 	}
 
 
-	function _sendOneInvoiceToChorus(Facture $invoice)
+	function _sendOneInvoiceToChorus(Facture &$invoice)
 	{
 		global $langs;
 
@@ -244,6 +253,8 @@ class Actionsatgpconnector
 		if($documentUploaded)
 		{
 			$this->_insertAutomaticActionComm($invoice, 'INVOICE_SENT_TO_CHORUS');
+			$invoice->array_options['options_atgp_status'] = 201; // Déposée
+			$invoice->insertExtraFields();
 		}
 		else
 		{
