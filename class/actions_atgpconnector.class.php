@@ -196,6 +196,11 @@ class Actionsatgpconnector
 			{
 				$object->fetch_optionals();
 			}
+
+			if(empty($object->linkedObjects) && method_exists($object, 'fetchObjectLinked'))
+			{
+				$object->fetchObjectLinked();
+			}
 		}
 
 		return ! empty($conf->global->ATGPCONNECTOR_FTP_HOST) && ! empty($conf->global->ATGPCONNECTOR_FTP_USER);

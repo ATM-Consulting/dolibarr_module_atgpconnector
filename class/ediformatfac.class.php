@@ -247,7 +247,7 @@ class EDIFormatFACSegmentENT extends EDIFormatSegment
 		)
 		, 14 => array (
 			'label' => 'Date/heure document JJ/MM/AAAA HH:MN'
-			, 'data' => 'dol_print_date($object->datef, "%d/%m/%Y %H:%M")'
+			, 'data' => 'dol_print_date($object->date, "%d/%m/%Y %H:%M")'
 			, 'maxLength' => 16
 			, 'required' => true
 		)

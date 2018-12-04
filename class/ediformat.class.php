@@ -25,7 +25,7 @@ abstract class EDIFormat
 
 	public final function put()
 	{
-		global $conf;
+		global $conf, $mysoc;
 
 		$filename = $this->object->ref . '_' . dol_print_date(dol_now(), '%Y%m%d_%H%M%S') . '.csv';
 		$tmpCSVPath = DOL_DATA_ROOT . '/atgpconnector/temp/' . $filename;
@@ -69,6 +69,7 @@ abstract class EDIFormat
 		}
 
 		fputcsv($csvHandle, array('END'), ATGPCONNECTOR_CSV_SEPARATOR);
+		fputcsv($csvHandle, array('@ND'), ATGPCONNECTOR_CSV_SEPARATOR);
 
 		fclose($csvHandle);
 

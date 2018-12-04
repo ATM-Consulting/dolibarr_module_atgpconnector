@@ -18,6 +18,18 @@ class EDIFormatFACChorus extends EDIFormat
 			'required' => true
 			, 'object' => '$object'
 		)
+		, 'PADIV' => array(
+			'required' => true
+			, 'object' => '$object->thirdparty'
+		)
+		, 'PADDP' => array(
+			'required' => true
+			, 'object' => '$object->thirdparty'
+		)
+		, 'PADSU' => array(
+			'required' => true
+			, 'object' => '$mysoc'
+		)
 		, 'LIG' => array(
 			'required' => true
 			, 'multiple' => true
@@ -37,6 +49,19 @@ class EDIFormatFACChorus extends EDIFormat
 	public function afterObjectLoaded()
 	{
 		global $conf, $mysoc;
+
+		// Numéro d'engagement
+
+		$TCommandes = array_values($this->object->linkedObjects['commande']);
+
+		if(! empty($TCommandes))
+		{
+			$order = $TCommandes[0];
+
+			$this->object->_order_chorus = $order;
+		}
+
+		// TVA
 
 		$TTVA = array();
 
@@ -182,18 +207,18 @@ class EDIFormatFACChorusSegmentENT extends EDIFormatSegment
 		)
 		, 2 => array (
 			'label' => 'Numéro de commande du client ou numéro d\'engagement'
-			, 'data' => '' // TODO
+			, 'data' => '$object->_order_chorus->ref_client'
 			, 'maxLength' => 35
 			, 'required' => true
 		)
 		, 3 => array (
 			'label' => 'Date de commande ou d\'engagement JJ/MM/AAAA'
-			, 'data' => '' // TODO
+			, 'data' => 'dol_print_date($object->_order_chorus->date, "%d/%m/%Y")'
 			, 'maxLength' => 10
 		)
 		, 4 => array (
 			'label' => 'Heure de commande ou d\'engagement HH:MN'
-			, 'data' => ''
+			, 'data' => 'dol_print_date($object->_order_chorus->date, "%H:%M")'
 			, 'maxLength' => 5
 		)
 		, 5 => array (
@@ -246,12 +271,12 @@ class EDIFormatFACChorusSegmentENT extends EDIFormatSegment
 		)
 		, 14 => array (
 			'label' => 'Date/heure document JJ/MM/AAAA HH:MN'
-			, 'data' => 'dol_print_date($object->datef, "%d/%m/%Y %H:%M")'
+			, 'data' => 'dol_print_date($object->date, "%d/%m/%Y %H:%M")'
 			, 'maxLength' => 16
 			, 'required' => true
 		)
 		, 15 => array (
-			'label' => 'Date d\'échéance JJ/MM/AAA'
+			'label' => 'Date d\'échéance JJ/MM/AAAA'
 			, 'data' => 'dol_print_date($object->date_lim_reglement, "%d/%m/%Y")'
 			, 'maxLength' => 10
 			, 'required' => true
@@ -448,6 +473,423 @@ class EDIFormatFACChorusSegmentPAR extends EDIFormatSegment
 }
 
 
+class EDIFormatFACChorusSegmentPADIV extends EDIFormatSegment
+{
+	public static $TFields = array (
+		1 => array (
+			'label' => 'Étiquette de segment "PAD"'
+			, 'data' => '"PAD"'
+			, 'maxLength' => 3
+			, 'required' => true
+		)
+		, 2 => array (
+			'label' => 'Code EAN'
+			, 'data' => '""'
+			, 'maxLength' => 13
+		)
+		, 3 => array (
+			'label' => 'Raison sociale'
+			, 'data' => '$object->nom'
+			, 'maxLength' => 35
+			, 'required' => true
+		)
+		, 4 => array (
+			'label' => 'Type de partenaire (cf table PAD.4)'
+			, 'data' => '"IV"' // TODO
+			, 'maxLength' => 3
+			, 'required' => true
+		)
+		, 5 => array (
+			'label' => 'Adresse'
+			, 'data' => 'explode("\n", $object->address)[0]'
+			, 'maxLength' => 35
+			, 'required' => true
+		)
+		, 6 => array (
+			'label' => 'Adresse ligne 2'
+			, 'data' => 'explode("\n", $object->address)[1]'
+			, 'maxLength' => 35
+		)
+		, 7 => array (
+			'label' => 'Adresse ligne 3'
+			, 'data' => 'str_replace("\n", " ", explode("\n", $object->address, 3)[2])'
+			, 'maxLength' => 35
+		)
+		, 8 => array (
+			'label' => 'Code postal'
+			, 'data' => '$object->zip'
+			, 'maxLength' => 9
+			, 'required' => true
+		)
+		, 9 => array (
+			'label' => 'Ville'
+			, 'data' => '$object->town'
+			, 'maxLength' => 35
+		)
+		, 10 => array (
+			'label' => 'Code pays'
+			, 'data' => '$object->country_code'
+			, 'maxLength' => 3
+			, 'maxLength' => 35
+		)
+		, 11 => array (
+			'label' => 'SIREN'
+			, 'data' => '$object->idprof1'
+			, 'maxLength' => 35
+		)
+		, 12 => array (
+			'label' => 'Numéro d\'identification TVA'
+			, 'data' => '$object->tva_intra'
+			, 'maxLength' => 35
+		)
+		, 13 => array (
+			'label' => 'RCS Ville'
+			, 'data' => '""'
+			, 'maxLength' => 35
+		)
+		, 14 => array (
+			'label' => 'RCS Numéro'
+			, 'data' => '""'
+			, 'maxLength' => 35
+		)
+		, 15 => array (
+			'label' => 'Capital social'
+			, 'data' => '$object->capital'
+			, 'maxLength' => 35
+		)
+		, 16 => array (
+			'label' => 'Forme juridique'
+			, 'data' => '$object->forme_juridique'
+			, 'maxLength' => 35
+		)
+		, 17 => array (
+			'label' => 'Référence fournisseur chez la centrale'
+			, 'data' => '""'
+			, 'maxLength' => 35
+		)
+		, 18 => array (
+			'label' => 'Code interne partenaire chez le client'
+			, 'data' => '""'
+			, 'maxLength' => 35
+		)
+		, 19 => array (
+			'label' => 'Code service'
+			, 'data' => '""'
+			, 'maxLength' => 35
+		)
+		, 20 => array (
+			'label' => 'SIRET'
+			, 'data' => '$object->idprof2'
+			, 'maxLength' => 35
+			, 'required' => true
+		)
+		, 21 => array (
+			'label' => 'IBAN'
+			, 'data' => '""'
+			, 'maxLength' => 35
+		)
+		, 22 => array (
+			'label' => 'SWIFT/BIC'
+			, 'data' => '""'
+			, 'maxLength' => 35
+		)
+		, 23 => array (
+			'label' => 'Téléphone'
+			, 'data' => '$object->phone'
+			, 'maxLength' => 35
+		)
+		, 24 => array (
+			'label' => 'Fax'
+			, 'data' => '$object->fax'
+			, 'maxLength' => 35
+		)
+		, 25 => array (
+			'label' => 'Email'
+			, 'data' => '$object->email'
+			, 'maxLength' => 35
+		)
+	);
+}
+
+
+class EDIFormatFACChorusSegmentPADDP extends EDIFormatSegment
+{
+	public static $TFields = array (
+		1 => array (
+			'label' => 'Étiquette de segment "PAD"'
+			, 'data' => '"PAD"'
+			, 'maxLength' => 3
+			, 'required' => true
+		)
+		, 2 => array (
+			'label' => 'Code EAN'
+			, 'data' => '""'
+			, 'maxLength' => 13
+		)
+		, 3 => array (
+			'label' => 'Raison sociale'
+			, 'data' => '$object->nom'
+			, 'maxLength' => 35
+			, 'required' => true
+		)
+		, 4 => array (
+			'label' => 'Type de partenaire (cf table PAD.4)'
+			, 'data' => '"DP"'
+			, 'maxLength' => 3
+			, 'required' => true
+		)
+		, 5 => array (
+			'label' => 'Adresse'
+			, 'data' => 'explode("\n", $object->address)[0]'
+			, 'maxLength' => 35
+			, 'required' => true
+		)
+		, 6 => array (
+			'label' => 'Adresse ligne 2'
+			, 'data' => 'explode("\n", $object->address)[1]'
+			, 'maxLength' => 35
+		)
+		, 7 => array (
+			'label' => 'Adresse ligne 3'
+			, 'data' => 'str_replace("\n", " ", explode("\n", $object->address, 3)[2])'
+			, 'maxLength' => 35
+		)
+		, 8 => array (
+			'label' => 'Code postal'
+			, 'data' => '$object->zip'
+			, 'maxLength' => 9
+			, 'required' => true
+		)
+		, 9 => array (
+			'label' => 'Ville'
+			, 'data' => '$object->town'
+			, 'maxLength' => 35
+		)
+		, 10 => array (
+			'label' => 'Code pays'
+			, 'data' => '$object->country_code'
+			, 'maxLength' => 3
+			, 'maxLength' => 35
+		)
+		, 11 => array (
+			'label' => 'SIREN'
+			, 'data' => '$object->idprof1'
+			, 'maxLength' => 35
+		)
+		, 12 => array (
+			'label' => 'Numéro d\'identification TVA'
+			, 'data' => '$object->tva_intra'
+			, 'maxLength' => 35
+		)
+		, 13 => array (
+			'label' => 'RCS Ville'
+			, 'data' => '""'
+			, 'maxLength' => 35
+		)
+		, 14 => array (
+			'label' => 'RCS Numéro'
+			, 'data' => '""'
+			, 'maxLength' => 35
+		)
+		, 15 => array (
+			'label' => 'Capital social'
+			, 'data' => '$object->capital'
+			, 'maxLength' => 35
+		)
+		, 16 => array (
+			'label' => 'Forme juridique'
+			, 'data' => '$object->forme_juridique'
+			, 'maxLength' => 35
+		)
+		, 17 => array (
+			'label' => 'Référence fournisseur chez la centrale'
+			, 'data' => '""'
+			, 'maxLength' => 35
+		)
+		, 18 => array (
+			'label' => 'Code interne partenaire chez le client'
+			, 'data' => '""'
+			, 'maxLength' => 35
+		)
+		, 19 => array (
+			'label' => 'Code service'
+			, 'data' => '""'
+			, 'maxLength' => 35
+		)
+		, 20 => array (
+			'label' => 'SIRET'
+			, 'data' => '$object->idprof2'
+			, 'maxLength' => 35
+			, 'required' => true
+		)
+		, 21 => array (
+			'label' => 'IBAN'
+			, 'data' => '""'
+			, 'maxLength' => 35
+		)
+		, 22 => array (
+			'label' => 'SWIFT/BIC'
+			, 'data' => '""'
+			, 'maxLength' => 35
+		)
+		, 23 => array (
+			'label' => 'Téléphone'
+			, 'data' => '$object->phone'
+			, 'maxLength' => 35
+		)
+		, 24 => array (
+			'label' => 'Fax'
+			, 'data' => '$object->fax'
+			, 'maxLength' => 35
+		)
+		, 25 => array (
+			'label' => 'Email'
+			, 'data' => '$object->email'
+			, 'maxLength' => 35
+		)
+	);
+}
+
+
+class EDIFormatFACChorusSegmentPADSU extends EDIFormatSegment
+{
+	public static $TFields = array (
+		1 => array (
+			'label' => 'Étiquette de segment "PAD"'
+			, 'data' => '"PAD"'
+			, 'maxLength' => 3
+			, 'required' => true
+		)
+		, 2 => array (
+			'label' => 'Code EAN'
+			, 'data' => '""'
+			, 'maxLength' => 13
+		)
+		, 3 => array (
+			'label' => 'Raison sociale'
+			, 'data' => '$object->nom'
+			, 'maxLength' => 35
+			, 'required' => true
+		)
+		, 4 => array (
+			'label' => 'Type de partenaire (cf table PAD.4)'
+			, 'data' => '"SU"'
+			, 'maxLength' => 3
+			, 'required' => true
+		)
+		, 5 => array (
+			'label' => 'Adresse'
+			, 'data' => 'explode("\n", $object->address)[0]'
+			, 'maxLength' => 35
+			, 'required' => true
+		)
+		, 6 => array (
+			'label' => 'Adresse ligne 2'
+			, 'data' => 'explode("\n", $object->address)[1]'
+			, 'maxLength' => 35
+		)
+		, 7 => array (
+			'label' => 'Adresse ligne 3'
+			, 'data' => 'str_replace("\n", " ", explode("\n", $object->address, 3)[2])'
+			, 'maxLength' => 35
+		)
+		, 8 => array (
+			'label' => 'Code postal'
+			, 'data' => '$object->zip'
+			, 'maxLength' => 9
+			, 'required' => true
+		)
+		, 9 => array (
+			'label' => 'Ville'
+			, 'data' => '$object->town'
+			, 'maxLength' => 35
+		)
+		, 10 => array (
+			'label' => 'Code pays'
+			, 'data' => '$object->country_code'
+			, 'maxLength' => 3
+			, 'maxLength' => 35
+		)
+		, 11 => array (
+			'label' => 'SIREN'
+			, 'data' => '$object->idprof1'
+			, 'maxLength' => 35
+		)
+		, 12 => array (
+			'label' => 'Numéro d\'identification TVA'
+			, 'data' => '$object->tva_intra'
+			, 'maxLength' => 35
+		)
+		, 13 => array (
+			'label' => 'RCS Ville'
+			, 'data' => '""'
+			, 'maxLength' => 35
+		)
+		, 14 => array (
+			'label' => 'RCS Numéro'
+			, 'data' => '""'
+			, 'maxLength' => 35
+		)
+		, 15 => array (
+			'label' => 'Capital social'
+			, 'data' => '$object->capital'
+			, 'maxLength' => 35
+		)
+		, 16 => array (
+			'label' => 'Forme juridique'
+			, 'data' => '$object->forme_juridique'
+			, 'maxLength' => 35
+		)
+		, 17 => array (
+			'label' => 'Référence fournisseur chez la centrale'
+			, 'data' => '""'
+			, 'maxLength' => 35
+		)
+		, 18 => array (
+			'label' => 'Code interne partenaire chez le client'
+			, 'data' => '""'
+			, 'maxLength' => 35
+		)
+		, 19 => array (
+			'label' => 'Code service'
+			, 'data' => '""'
+			, 'maxLength' => 35
+		)
+		, 20 => array (
+			'label' => 'SIRET'
+			, 'data' => '$object->idprof2'
+			, 'maxLength' => 35
+			, 'required' => true
+		)
+		, 21 => array (
+			'label' => 'IBAN'
+			, 'data' => '""'
+			, 'maxLength' => 35
+		)
+		, 22 => array (
+			'label' => 'SWIFT/BIC'
+			, 'data' => '""'
+			, 'maxLength' => 35
+		)
+		, 23 => array (
+			'label' => 'Téléphone'
+			, 'data' => '$object->phone'
+			, 'maxLength' => 35
+		)
+		, 24 => array (
+			'label' => 'Fax'
+			, 'data' => '$object->fax'
+			, 'maxLength' => 35
+		)
+		, 25 => array (
+			'label' => 'Email'
+			, 'data' => '$object->email'
+			, 'maxLength' => 35
+		)
+	);
+}
+
+
 class EDIFormatFACChorusSegmentLIG extends EDIFormatSegment
 {
 	public static $TFields = array (
@@ -476,14 +918,14 @@ class EDIFormatFACChorusSegmentLIG extends EDIFormatSegment
 		)
 		, 5 => array (
 			'label' => 'Par combien (multiple de commande)'
-			, 'data' => '1' // TODO
-			, 'maxLength' => 10
+			, 'data' => '1.000000' // TODO
+			, 'maxLength' => 14 // 10\3
 			, 'required' => true
 		)
 		, 6 => array (
 			'label' => 'Quantité commandée'
 			, 'data' => ''
-			, 'maxLength' => 10
+			, 'maxLength' => 14 // 10\3
 		)
 		, 7 => array (
 			'label' => 'Unité de quantité (cf table MEA.4)'
@@ -493,14 +935,14 @@ class EDIFormatFACChorusSegmentLIG extends EDIFormatSegment
 		)
 		, 8 => array (
 			'label' => 'Quantité facturée'
-			, 'data' => '$object->qty'
-			, 'maxLength' => 10
+			, 'data' => 'sprintf("%10.3f", price2num($object->qty))'
+			, 'maxLength' => 14 // 10\3
 			, 'required' => true
 		)
 		, 9 => array (
 			'label' => 'Prix unitaire net'
-			, 'data' => '$object->qty > 0 ? $object->total_ht / $object->qty : 0'
-			, 'maxLength' => 15
+			, 'data' => 'sprintf("%15.6f", price2num($object->qty > 0 ? $object->total_ht / $object->qty : 0))'
+			, 'maxLength' => 22 // 15\6
 			, 'required' => true
 		)
 		, 10 => array (
@@ -521,31 +963,31 @@ class EDIFormatFACChorusSegmentLIG extends EDIFormatSegment
 		)
 		, 13 => array (
 			'label' => 'Taux de TVA (par exemple 19,6)'
-			, 'data' => '$object->tva_tx'
-			, 'maxLength' => 5
+			, 'data' => 'sprintf("%5.2f", price2num($object->tva_tx))'
+			, 'maxLength' => 8 // 5\2
 			, 'required' => true
 		)
 		, 14 => array (
 			'label' => 'Prix unitaire brut'
-			, 'data' => '$object->subprice'
-			, 'maxLength' => 15
+			, 'data' => 'sprintf("%15.6f", price2num($object->subprice))'
+			, 'maxLength' => 22 // 15\6
 			, 'required' => true
 		)
 		, 15 => array (
 			'label' => 'Poids net total ligne'
 			, 'data' => ''
-			, 'maxLength' => 9
+			, 'maxLength' => 13 // 9\3
 		)
 		, 16 => array (
 			'label' => 'Libellé ligne de facture (ou libellé du produit)'
-			, 'data' => '$object->libelle . "\n" . $object->desc'
+			, 'data' => '$object->libelle'
 			, 'maxLength' => 70
 			, 'required' => true
 		)
 		, 17 => array (
 			'label' => 'Montant net HT total ligne'
-			, 'data' => 'price2num($object->total_ht)'
-			, 'maxLength' => 3
+			, 'data' => 'sprintf("%17.2f", price2num($object->total_ht))'
+			, 'maxLength' => 20 // 17\2
 			, 'required' => true
 		)
 		, 18 => array (
@@ -556,12 +998,12 @@ class EDIFormatFACChorusSegmentLIG extends EDIFormatSegment
 		, 19 => array (
 			'label' => 'Prix net ristournable (obligatoire si TPF et/ou pour la centrale COMAFRANC)'
 			, 'data' => ''
-			, 'maxLength' => 15
+			, 'maxLength' => 22 // 15\6
 		)
 		, 20 => array (
 			'label' => 'Montant net ristournable (obligatoire si TPF et/ou pour la centrale COMAFRANC)'
 			, 'data' => ''
-			, 'maxLength' => 17
+			, 'maxLength' => 20 // 17\2
 		)
 		, 21 => array (
 			'label' => 'Référence ligne du composé (obligatoire si c\'est un composant)'
@@ -596,7 +1038,7 @@ class EDIFormatFACChorusSegmentLIG extends EDIFormatSegment
 		, 27 => array (
 			'label' => 'Prix public TTC (secteur livre)'
 			, 'data' => ''
-			, 'maxLength' => 15
+			, 'maxLength' => 22 // 15\6
 		)
 		, 28 => array (
 			'label' => 'Numéro commande d\'origine'
@@ -616,12 +1058,12 @@ class EDIFormatFACChorusSegmentLIG extends EDIFormatSegment
 		, 31 => array (
 			'label' => 'Prix brut remisé'
 			, 'data' => ''
-			, 'maxLength' => 15
+			, 'maxLength' => 22 // 15\6
 		)
 		, 32 => array (
 			'label' => 'Montant brut remisé'
 			, 'data' => ''
-			, 'maxLength' => 17
+			, 'maxLength' => 20 // 17\2
 		)
 		, 33 => array (
 			'label' => 'Date commande d\'origin JJ/MM/AAAA'
@@ -636,7 +1078,7 @@ class EDIFormatFACChorusSegmentLIG extends EDIFormatSegment
 		, 35 => array (
 			'label' => 'Base Prix unitaire net'
 			, 'data' => ''
-			, 'maxLength' => 17
+			, 'maxLength' => 24 // 17\6
 		)
 		, 36 => array (
 			'label' => 'Date début livraison JJ/MM/AAAA'
@@ -666,7 +1108,7 @@ class EDIFormatFACChorusSegmentLIG extends EDIFormatSegment
 		, 41 => array (
 			'label' => 'Quantité livrée'
 			, 'data' => ''
-			, 'maxLength' => 10
+			, 'maxLength' => 14 // 10\3
 		)
 		, 42 => array (
 			'label' => 'Unité de quantité livrée (cf table MEA.4)'
@@ -695,20 +1137,20 @@ class EDIFormatFACChorusSegmentTVA extends EDIFormatSegment
 		)
 		, 2 => array(
 			'label' => 'Taux de TVA'
-			, 'data' => '$key'
-			, 'maxLength' => 5
+			, 'data' => 'sprintf("%5.2f", price2num($key))'
+			, 'maxLength' => 8 // 5\2
 			, 'required' => true
 		)
 		, 3 => array(
 			'label' => 'Montant total soumis à TVA'
-			, 'data' => '$object->totalHT'
-			, 'maxLength' => 10
+			, 'data' => 'sprintf("%10.2f", price2num($object->totalHT))'
+			, 'maxLength' => 13 // 10\2
 			, 'required' => true
 		)
 		, 4 => array(
 			'label' => 'Montant de la TVA'
-			, 'data' => '$object->totalTVA'
-			, 'maxLength' => 10
+			, 'data' => 'sprintf("%10.2f", price2num($object->totalTVA))'
+			, 'maxLength' => 13 // 10\2
 			, 'required' => true
 		)
 		, 5 => array(
@@ -741,56 +1183,56 @@ class EDIFormatFACChorusSegmentPIE extends EDIFormatSegment
 		)
 		, 2 => array(
 			'label' => 'Montant total hors taxes'
-			, 'data' => '$object->total_ht'
-			, 'maxLength' => 10
+			, 'data' => 'sprintf("%10.2f", price2num($object->total_ht))'
+			, 'maxLength' => 13 // 10\2
 			, 'required' => true
 		)
 		, 3 => array(
 			'label' => 'Montant total TVA'
-			, 'data' => '$object->total_tva'
-			, 'maxLength' => 10
+			, 'data' => 'sprintf("%10.2f", price2num($object->total_tva))'
+			, 'maxLength' => 13 // 10\2
 			, 'required' => true
 		)
 		, 4 => array(
 			'label' => 'Montant total toutes taxes comprises'
-			, 'data' => '$object->total_ttc'
-			, 'maxLength' => 10
+			, 'data' => 'sprintf("%10.2f", price2num($object->total_ttc))'
+			, 'maxLength' => 13 // 10\2
 			, 'required' => true
 		)
 		, 5 => array(
 			'label' => 'Montant total net ristournable (obligatoire si TPF)'
 			, 'data' => ''
-			, 'maxLength' => 10
+			, 'maxLength' => 13 // 10\2
 		)
 		, 6 => array(
 			'label' => 'Montant total TPF (obligatoire si TPF)'
 			, 'data' => ''
-			, 'maxLength' => 10
+			, 'maxLength' => 13 // 10\2
 		)
 		, 7 => array(
 			'label' => 'Montant total des taxes (obligatoire si TPF)'
 			, 'data' => ''
-			, 'maxLength' => 10
+			, 'maxLength' => 13 // 10\2
 		)
 		, 8 => array(
 			'label' => 'Montant Total Ristournable Ligne (obligatoire pour la centrale COMAFRANC)'
 			, 'data' => ''
-			, 'maxLength' => 10
+			, 'maxLength' => 113 // 10\2
 		)
 		, 9 => array(
 			'label' => 'Montant Total Consigne (obligatoire si gestion consigne)'
 			, 'data' => ''
-			, 'maxLength' => 10
+			, 'maxLength' => 13 // 10\2
 		)
 		, 10 => array(
 			'label' => 'Montant Acompte'
 			, 'data' => '' // TODO
-			, 'maxLength' => 10
+			, 'maxLength' => 13 // 10\2
 		)
 		, 11 => array(
 			'label' => 'Montant Payable (obligatoire si gestion acompte)'
 			, 'data' => '' // TODO
-			, 'maxLength' => 10
+			, 'maxLength' => 13 // 10\2
 		)
 	);
 }
