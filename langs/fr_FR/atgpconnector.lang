@@ -19,7 +19,8 @@ ATGPC_ActivatedModes=Modes EDI
 ATGPCONNECTOR_DEV_MODE=Mode de tests
 ATGPCONNECTOR_FORMAT_FAC=Format factures FAC@EDI
 ATGPCONNECTOR_FORMAT_FAC_CHORUS=Mode Chorus
-ATGPCONNECTOR_FORMAT_FAC_CHORUS_CATEGORY=Catégorie de clients/prospects impactés par le mode Chorus
+ATGPCONNECTOR_FORMAT_FAC_CHORUS_PATH=Mode Chorus : emplacement du dossier distant
+ATGPCONNECTOR_FORMAT_FAC_CHORUS_CATEGORY=Mode Chorus : catégorie de clients/prospects impactés
 
 
 

@@ -260,7 +260,12 @@ class Actionsatgpconnector
 
 	function _sendOneInvoiceToChorus(Facture &$invoice)
 	{
-		global $langs;
+		global $conf, $langs;
+
+		if(! empty($conf->global->ATGPCONNECTOR_FORMAT_FAC_CHORUS_PATH))
+		{
+			EDIFormatFACChorus::$remotePath = $conf->global->ATGPCONNECTOR_FORMAT_FAC_CHORUS_PATH;
+		}
 
 		$formatFAC = new EDIFormatFACChorus($invoice);
 		$documentUploaded = $formatFAC->put();
