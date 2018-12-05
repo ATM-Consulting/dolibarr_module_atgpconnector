@@ -50,7 +50,17 @@ class EDIFormatFACChorus extends EDIFormat
 	{
 		global $conf, $mysoc;
 
-		// Numéro d'engagement
+		// RCS
+
+		$this->parseRCS($this->object->thirdparty);
+		$this->parseRCS($mysoc);
+
+
+		// Code service
+
+		$this->parseServiceCode();
+
+		// Linked order
 
 		$TCommandes = array_values($this->object->linkedObjects['commande']);
 
@@ -60,6 +70,7 @@ class EDIFormatFACChorus extends EDIFormat
 
 			$this->object->_order_chorus = $order;
 		}
+
 
 		// TVA
 
@@ -130,6 +141,52 @@ class EDIFormatFACChorus extends EDIFormat
 		}
 
 		$this->object->_TTVA = $TTVA;
+	}
+
+
+	protected function parseRCS(&$societe)
+	{
+		$rcsRaw = $societe->idprof4;
+		$TRCSRaw = preg_split("/\s+/", $rcsRaw);
+
+		$rcsCode = '';
+		$rcsCodeLength = 0;
+
+		while($rcsCodeLength < 10 && ! empty($TRCSRaw))
+		{
+			$rcsCodeChunk = array_pop($TRCSRaw);
+			$rcsCode = $rcsCodeChunk . $rcsCode;
+			$rcsCodeLength += strlen($rcsCodeChunk);
+		}
+
+		$rcsCity = implode(' ', $TRCSRaw);
+
+		if(strlen($rcsCode) > 10)
+		{
+			$TMatches = array();
+
+			preg_match('/^(.+)(.{10})$/', $rcsCode, $TMatches);
+
+			$rcsCity .= ' ' . $TMatches[1];
+			$rcsCode = $TMatches[2];
+		}
+
+		$societe->_rcsCity = $rcsCity;
+		$societe->_rcsCode = $rcsCode;
+	}
+
+
+	protected function parseServiceCode()
+	{
+		foreach($this->object->_TContacts as $contactDescriptor)
+		{
+			if($contactDescriptor['code'] == 'CHORUS_SERVICE')
+			{
+				$this->object->thirdparty->_chorusServiceCode = $contactDescriptor['_contact']->array_options['options_service_code'];
+
+				break;
+			}
+		}
 	}
 
 
@@ -544,12 +601,12 @@ class EDIFormatFACChorusSegmentPADIV extends EDIFormatSegment
 		)
 		, 13 => array (
 			'label' => 'RCS Ville'
-			, 'data' => '""'
+			, 'data' => '$object->_rcsCity'
 			, 'maxLength' => 35
 		)
 		, 14 => array (
 			'label' => 'RCS Numéro'
-			, 'data' => '""'
+			, 'data' => '$object->_rcsCode'
 			, 'maxLength' => 35
 		)
 		, 15 => array (
@@ -574,7 +631,7 @@ class EDIFormatFACChorusSegmentPADIV extends EDIFormatSegment
 		)
 		, 19 => array (
 			'label' => 'Code service'
-			, 'data' => '""'
+			, 'data' => '$object->_chorusServiceCode'
 			, 'maxLength' => 35
 		)
 		, 20 => array (
@@ -683,12 +740,12 @@ class EDIFormatFACChorusSegmentPADDP extends EDIFormatSegment
 		)
 		, 13 => array (
 			'label' => 'RCS Ville'
-			, 'data' => '""'
+			, 'data' => '$object->_rcsCity'
 			, 'maxLength' => 35
 		)
 		, 14 => array (
 			'label' => 'RCS Numéro'
-			, 'data' => '""'
+			, 'data' => '$object->_rcsCode'
 			, 'maxLength' => 35
 		)
 		, 15 => array (
@@ -713,7 +770,7 @@ class EDIFormatFACChorusSegmentPADDP extends EDIFormatSegment
 		)
 		, 19 => array (
 			'label' => 'Code service'
-			, 'data' => '""'
+			, 'data' => '$object->_chorusServiceCode'
 			, 'maxLength' => 35
 		)
 		, 20 => array (
@@ -822,12 +879,12 @@ class EDIFormatFACChorusSegmentPADSU extends EDIFormatSegment
 		)
 		, 13 => array (
 			'label' => 'RCS Ville'
-			, 'data' => '""'
+			, 'data' => '$object->_rcsCity'
 			, 'maxLength' => 35
 		)
 		, 14 => array (
 			'label' => 'RCS Numéro'
-			, 'data' => '""'
+			, 'data' => '$object->_rcsCode'
 			, 'maxLength' => 35
 		)
 		, 15 => array (

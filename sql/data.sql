@@ -47,3 +47,7 @@ INSERT INTO llx_c_atgpconnector_status (rowid, code, label, active) VALUES (238,
 INSERT INTO llx_c_atgpconnector_status (rowid, code, label, active) VALUES (239, 'chorus_39', 'Acheminée MOA', 1);
 INSERT INTO llx_c_atgpconnector_status (rowid, code, label, active) VALUES (240, 'chorus_40', 'Acheminée MOE', 1);
 INSERT INTO llx_c_atgpconnector_status (rowid, code, label, active) VALUES (241, 'chorus_41', 'Remplacé par le A22', 1);
+
+INSERT INTO llx_c_type_contact (rowid, element, source, code, libelle, active, module, position) VALUES (10406800, 'facture', 'external', 'CHORUS_SERVICE', 'Code service', 1, 'atgpconnector', 1);
+INSERT INTO llx_c_type_contact (rowid, element, source, code, libelle, active, module, position) VALUES (10406801, 'commande', 'external', 'CHORUS_SERVICE', 'Code service', 1, 'atgpconnector', 1);
+

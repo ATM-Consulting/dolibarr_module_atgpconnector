@@ -379,5 +379,6 @@ class modatgpconnector extends DolibarrModules
 		$extrafields = new ExtraFields($this->db);
 
 		$ret = $extrafields->addExtraField('atgp_status', 'ATGPC_ATGPStatus', 'sellist', 1, '', 'facture', 0, 0, '', array('options' => array('c_atgpconnector_status:label:rowid::active=1' => null)), 0, '', -1, 0, '', '', 'atgpconnector@atgpconnector');
+		$ret = $extrafields->addExtraField('service_code', 'ATGPC_ChorusServiceCode', 'varchar', 1, 64, 'socpeople', 0, 0, '', array(), 1, '', 1, 0, '', '', 'atgpconnector@atgpconnector');
 	}
 }
