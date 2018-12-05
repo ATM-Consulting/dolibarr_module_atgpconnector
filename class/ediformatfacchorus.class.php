@@ -50,6 +50,7 @@ class EDIFormatFACChorus extends EDIFormat
 	{
 		global $conf, $mysoc;
 
+
 		// RCS
 
 		$this->parseRCS($this->object->thirdparty);
@@ -59,6 +60,25 @@ class EDIFormatFACChorus extends EDIFormat
 		// Code service
 
 		$this->parseServiceCode();
+
+
+		// RIB
+
+		dol_include_once('/compta/bank/class/account.class.php');
+
+		$bankid = empty($this->object->fk_account) ? $conf->global->FACTURE_RIB_NUMBER : $this->object->fk_account;
+
+		if (! empty($this->object->fk_bank)) // For backward compatibility when object->fk_account is forced with object->fk_bank
+		{
+			$bankid = $this->object->fk_bank;
+		}
+
+		$account = new Account($this->object->db);
+		$account->fetch($bankid);
+
+		$mysoc->_iban = $account->iban;
+		$mysoc->_bic = $account->bic;
+
 
 		// Linked order
 
@@ -920,12 +940,12 @@ class EDIFormatFACChorusSegmentPADSU extends EDIFormatSegment
 		)
 		, 21 => array (
 			'label' => 'IBAN'
-			, 'data' => '""'
+			, 'data' => '$object->_iban'
 			, 'maxLength' => 35
 		)
 		, 22 => array (
 			'label' => 'SWIFT/BIC'
-			, 'data' => '""'
+			, 'data' => '$object->_bic'
 			, 'maxLength' => 35
 		)
 		, 23 => array (
