@@ -58,18 +58,18 @@ abstract class EDIFormat
 				foreach($segmentObj as $key => $segmentSubObj)
 				{
 					$TData = $segmentInstance->get($segmentSubObj, $key);
-					fputcsv($csvHandle, $TData, ATGPCONNECTOR_CSV_SEPARATOR);
+					fwrite($csvHandle, implode(ATGPCONNECTOR_CSV_SEPARATOR, $TData) . PHP_EOL);
 				}
 			}
 			else
 			{
 				$TData = $segmentInstance->get($segmentObj);
-				fputcsv($csvHandle, $TData, ATGPCONNECTOR_CSV_SEPARATOR);
+				fwrite($csvHandle, implode(ATGPCONNECTOR_CSV_SEPARATOR, $TData) . PHP_EOL);
 			}
 		}
 
-		fputcsv($csvHandle, array('END'), ATGPCONNECTOR_CSV_SEPARATOR);
-		fputcsv($csvHandle, array('@ND'), ATGPCONNECTOR_CSV_SEPARATOR);
+		fwrite($csvHandle, 'END' . PHP_EOL);
+		fwrite($csvHandle, '@ND' . PHP_EOL);
 
 		fclose($csvHandle);
 
@@ -134,7 +134,11 @@ abstract class EDIFormatSegment
 
 		foreach(static::$TFields as $index => $TFieldDescritor)
 		{
-			$TData[] = substr(trim(eval('return ' . $TFieldDescritor['data'] . ';')), 0, $TFieldDescritor['maxLength']);
+			$data = eval('return ' . $TFieldDescritor['data'] . ';');
+			$data = trim($data);
+			$data = str_replace(ATGPCONNECTOR_CSV_SEPARATOR, ' ', $data);
+			$data = substr($data, 0, $TFieldDescritor['maxLength']);
+			$TData[] = $data;
 		}
 
 		// TODO Gestion d'erreurs
