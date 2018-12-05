@@ -66,6 +66,9 @@ class EDIFormatFACChorus extends EDIFormat
 
 		dol_include_once('/compta/bank/class/account.class.php');
 
+		$mysoc->_iban = '';
+		$mysoc->_bic = '';
+
 		$bankid = empty($this->object->fk_account) ? $conf->global->FACTURE_RIB_NUMBER : $this->object->fk_account;
 
 		if (! empty($this->object->fk_bank)) // For backward compatibility when object->fk_account is forced with object->fk_bank
@@ -73,11 +76,14 @@ class EDIFormatFACChorus extends EDIFormat
 			$bankid = $this->object->fk_bank;
 		}
 
-		$account = new Account($this->object->db);
-		$account->fetch($bankid);
-
-		$mysoc->_iban = $account->iban;
-		$mysoc->_bic = $account->bic;
+		if(! empty($bankid))
+		{
+			$account = new Account($this->object->db);
+			$account->fetch($bankid);
+	
+			$mysoc->_iban = $account->iban;
+			$mysoc->_bic = $account->bic;
+		}
 
 
 		// Linked order
