@@ -30,6 +30,11 @@ class EDIFormatFACChorus extends EDIFormat
 			'required' => true
 			, 'object' => '$mysoc'
 		)
+		, 'COM' => array(
+			'required' => false
+			, 'multiple' => true
+			, 'object' => '$object->_TCOM'
+		)
 		, 'LIG' => array(
 			'required' => true
 			, 'multiple' => true
@@ -101,13 +106,20 @@ class EDIFormatFACChorus extends EDIFormat
 		// TVA
 
 		$TTVA = array();
+		$TCOM = array(); // Gestion des titres
 
 		$sign=1;
 		if (isset($this->object->type) && $this->object->type == 2 && ! empty($conf->global->INVOICE_POSITIVE_CREDIT_NOTE)) $sign=-1;
 
 		foreach($this->object->lines as $i => $line)
 		{
-
+			if($line->product_type == 9) { // Gestion des titres
+				$TCOM[$i] = new stdClass();
+				$TCOM[$i]->commentaire = $line->label;
+				unset($this->object->lines[$i]);
+				continue;
+			}
+			
 			$total_ht = 0;
 			if ($line->special_code != 3)
 			{
@@ -166,7 +178,10 @@ class EDIFormatFACChorus extends EDIFormat
 			$TTVA[$vatrate]->totalTVA += $tvaligne;
 		}
 
+		$this->object->lines = array_values($this->object->lines); // Pour redémarrer la numérotation des lignes
+
 		$this->object->_TTVA = $TTVA;
+		$this->object->_TCOM = $TCOM;
 	}
 
 
@@ -617,12 +632,12 @@ class EDIFormatFACChorusSegmentPADIV extends EDIFormatSegment
 		)
 		, 11 => array (
 			'label' => 'SIREN'
-			, 'data' => '$object->idprof1'
+			, 'data' => 'str_replace(" ", "", $object->idprof1)'
 			, 'maxLength' => 35
 		)
 		, 12 => array (
 			'label' => 'Numéro d\'identification TVA'
-			, 'data' => '$object->tva_intra'
+			, 'data' => 'str_replace(" ", "", $object->tva_intra)'
 			, 'maxLength' => 35
 		)
 		, 13 => array (
@@ -662,7 +677,7 @@ class EDIFormatFACChorusSegmentPADIV extends EDIFormatSegment
 		)
 		, 20 => array (
 			'label' => 'SIRET'
-			, 'data' => '$object->idprof2'
+			, 'data' => 'str_replace(" ", "", $object->idprof2)'
 			, 'maxLength' => 35
 			, 'required' => true
 		)
@@ -756,12 +771,12 @@ class EDIFormatFACChorusSegmentPADDP extends EDIFormatSegment
 		)
 		, 11 => array (
 			'label' => 'SIREN'
-			, 'data' => '$object->idprof1'
+			, 'data' => 'str_replace(" ", "", $object->idprof1)'
 			, 'maxLength' => 35
 		)
 		, 12 => array (
 			'label' => 'Numéro d\'identification TVA'
-			, 'data' => '$object->tva_intra'
+			, 'data' => 'str_replace(" ", "", $object->tva_intra)'
 			, 'maxLength' => 35
 		)
 		, 13 => array (
@@ -801,7 +816,7 @@ class EDIFormatFACChorusSegmentPADDP extends EDIFormatSegment
 		)
 		, 20 => array (
 			'label' => 'SIRET'
-			, 'data' => '$object->idprof2'
+			, 'data' => 'str_replace(" ", "", $object->idprof2)'
 			, 'maxLength' => 35
 			, 'required' => true
 		)
@@ -895,12 +910,12 @@ class EDIFormatFACChorusSegmentPADSU extends EDIFormatSegment
 		)
 		, 11 => array (
 			'label' => 'SIREN'
-			, 'data' => '$object->idprof1'
+			, 'data' => 'str_replace(" ", "", $object->idprof1)'
 			, 'maxLength' => 35
 		)
 		, 12 => array (
 			'label' => 'Numéro d\'identification TVA'
-			, 'data' => '$object->tva_intra'
+			, 'data' => 'str_replace(" ", "", $object->tva_intra)'
 			, 'maxLength' => 35
 		)
 		, 13 => array (
@@ -940,13 +955,13 @@ class EDIFormatFACChorusSegmentPADSU extends EDIFormatSegment
 		)
 		, 20 => array (
 			'label' => 'SIRET'
-			, 'data' => '$object->idprof2'
+			, 'data' => 'str_replace(" ", "", $object->idprof2)'
 			, 'maxLength' => 35
 			, 'required' => true
 		)
 		, 21 => array (
 			'label' => 'IBAN'
-			, 'data' => '$object->_iban'
+			, 'data' => 'str_replace(" ", "", $object->_iban)'
 			, 'maxLength' => 35
 		)
 		, 22 => array (
@@ -1316,6 +1331,35 @@ class EDIFormatFACChorusSegmentPIE extends EDIFormatSegment
 			'label' => 'Montant Payable (obligatoire si gestion acompte)'
 			, 'data' => '' // TODO
 			, 'maxLength' => 13 // 10\2
+		)
+	);
+}
+
+class EDIFormatFACChorusSegmentCOM extends EDIFormatSegment
+{
+	public static $TFields = array(
+		1 => array(
+			'label' => 'Etiquette de segment "COM"'
+			, 'data' => '"COM"'
+			, 'maxLength' => 3
+			, 'required' => true
+		)
+		, 2 => array(
+			'label' => 'Qualifiant commentaire (cf table COM.2)'
+			, 'data' => '"AAI"'
+			, 'maxLength' => 3
+			, 'required' => true
+		)
+		, 3 => array(
+			'label' => 'Commentaire'
+			, 'data' => 'substr($object->commentaire,0,350)'
+			, 'maxLength' => 350
+			, 'required' => true
+		)
+		, 4 => array(
+			'label' => 'Commentaire en code'
+			, 'data' => ''
+			, 'maxLength' => 10
 		)
 	);
 }
