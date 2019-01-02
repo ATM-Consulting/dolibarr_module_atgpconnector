@@ -72,7 +72,7 @@ class EDIFormatSTATUS
 				return false;
 			}
 
-			$tmpPath = DOL_DATA_ROOT . '/atgpconnector/temp/';
+			$tmpPath = DOL_DATA_ROOT . '/atgpconnector/temp/status/';
 			ftp_chdir($ftpHandle, static::$remotePath);
 			$localFiles = array();
 
@@ -81,6 +81,7 @@ class EDIFormatSTATUS
 				if ($fname == '.' || $fname == '..') continue;
 				if(ftp_get($ftpHandle, $tmpPath.$fname, $fname, FTP_ASCII)) {
 					$localFiles[] = $tmpPath.$fname;
+					ftp_delete($ftpHandle, $fname);
 				}
 			}
 
