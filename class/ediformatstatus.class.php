@@ -24,6 +24,20 @@ class EDIFormatSTATUS
 		)
 	);
 	
+	public function __construct()
+	{
+		global $db;
+		
+		// Load status from dictionnary
+		$this->status = array();
+		
+		$sql = 'SELECT rowid, code FROM '.MAIN_DB_PREFIX.'c_atgpconnector_status';
+		$resql = $db->query($sql);
+		while($obj = $db->fetch_object($resql)) {
+			$this->status[$obj->code] = $obj->rowid;
+		}
+	}
+	
 	public function cronUpdateStatus() {
 		$files = $this->getFilesFromFTP();
 		$nbUpdate = 0;
@@ -59,10 +73,10 @@ class EDIFormatSTATUS
 			}
 
 			$tmpPath = DOL_DATA_ROOT . '/atgpconnector/temp/';
-			$remoteFilePath =  static::$remotePath;
+			ftp_chdir($ftpHandle, static::$remotePath);
 			$localFiles = array();
 
-			$files = ftp_nlist($ftpHandle, $remoteFilePath);
+			$files = ftp_nlist($ftpHandle, '.');
 			foreach ($files as $fname) {
 				if ($fname == '.' || $fname == '..') continue;
 				if(ftp_get($ftpHandle, $tmpPath.$fname, $fname, FTP_ASCII)) {
@@ -90,13 +104,14 @@ class EDIFormatSTATUS
 			}
 			if($line[0] == 'STA') {
 				$docStatus = trim($line[1]);
+				$docStatus = (!empty($this->status[$docStatus])) ? $this->status[$docStatus] : '';
 			}
 		}
 		fclose($fh);
 		//unlink($filePath);
 		
 		if(!empty($docRef) && !empty($docType) && !empty($docStatus)) {
-			$this->updateDocStatus(docRef, $docType, $docStatus);
+			return $this->updateDocStatus($docRef, $docType, $docStatus);
 		}
 	}
 	
