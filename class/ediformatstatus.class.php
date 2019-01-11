@@ -39,6 +39,8 @@ class EDIFormatSTATUS
 	}
 	
 	public function cronUpdateStatus() {
+		define('INC_FROM_DOLIBARR', true);
+		dol_include_once('/atgpconnector/config.php');
 		$files = $this->getFilesFromFTP();
 		$nbUpdate = 0;
 		if(!empty($files)) {
@@ -109,8 +111,8 @@ class EDIFormatSTATUS
 			}
 		}
 		fclose($fh);
+
 		//unlink($filePath);
-		
 		if(!empty($docRef) && !empty($docType) && !empty($docStatus)) {
 			return $this->updateDocStatus($docRef, $docType, $docStatus);
 		}

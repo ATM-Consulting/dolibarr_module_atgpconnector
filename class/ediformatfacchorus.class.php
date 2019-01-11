@@ -114,8 +114,13 @@ class EDIFormatFACChorus extends EDIFormat
 		foreach($this->object->lines as $i => $line)
 		{
 			if($line->product_type == 9) { // Gestion des titres
+				$com = (!empty($line->label)) ? $line->label : '';
+				$com.= (!empty($line->label) && (!empty($line->description))) ? ' - ' : '';
+				$com.= (!empty($line->description)) ? $line->description : '';
+				$com = str_replace(';', ' ', $com); // Suppression caractère ";"
+				$com = str_replace("\n", ', ', $com); // Suppression des sauts de ligne
 				$TCOM[$i] = new stdClass();
-				$TCOM[$i]->commentaire = $line->label;
+				$TCOM[$i]->commentaire = str_replace(';', ' ', $com);
 				unset($this->object->lines[$i]);
 				continue;
 			}
