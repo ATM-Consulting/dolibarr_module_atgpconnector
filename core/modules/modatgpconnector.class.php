@@ -96,7 +96,7 @@ class modatgpconnector extends DolibarrModules
 
 		// Data directories to create when module is enabled.
 		// Example: this->dirs = array("/atgpconnector/temp");
-		$this->dirs = array('/atgpconnector/temp');
+		$this->dirs = array('/atgpconnector/temp', '/atgpconnector/temp/status');
 
 		// Config pages. Put here list of php page, stored into atgpconnector/admin directory, to use to setup module.
 		$this->config_page_url = array("atgpconnector_setup.php@atgpconnector");
