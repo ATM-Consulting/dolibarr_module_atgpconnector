@@ -150,7 +150,7 @@ class EDIFormatSTATUS
 }
 
 
-class EDIFormatFACSegmentATGP extends EDIFormatSegment
+class EDIFormatSTATUSSegmentATGP extends EDIFormatSegment
 {
 	public static $TFields = array(
 		1 => array(
@@ -221,7 +221,7 @@ class EDIFormatFACSegmentATGP extends EDIFormatSegment
 }
 
 
-class EDIFormatFACSegmentENT extends EDIFormatSegment
+class EDIFormatSTATUSSegmentENT extends EDIFormatSegment
 {
 	public static $TFields = array (
 		1 => array (
@@ -268,7 +268,7 @@ class EDIFormatFACSegmentENT extends EDIFormatSegment
 }
 
 
-class EDIFormatFACSegmentPAR extends EDIFormatSegment
+class EDIFormatSTATUSSegmentPAR extends EDIFormatSegment
 {
 	public static $TFields = array (
 		1 => array (
@@ -358,7 +358,7 @@ class EDIFormatFACSegmentPAR extends EDIFormatSegment
 }
 
 
-class EDIFormatFACSegmentSTA extends EDIFormatSegment
+class EDIFormatSTATUSSegmentSTA extends EDIFormatSegment
 {
 	public static $TFields = array (
 		1 => array (
