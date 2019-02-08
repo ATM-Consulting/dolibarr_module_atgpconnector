@@ -39,8 +39,8 @@ class EDIFormatSTATUS extends EDIFormat
 	}
 	
 	public function cronUpdateStatus() {
-//		define('INC_FROM_DOLIBARR', true);
-		define('INC_FROM_CRON_SCRIPT', true);
+		define('INC_FROM_DOLIBARR', true);
+//		define('INC_FROM_CRON_SCRIPT', true);
 		dol_include_once('/atgpconnector/config.php');
 
 		$this->output = '*** '.date('Y-m-d H:i:s')."\n";
