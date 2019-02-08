@@ -2,7 +2,7 @@
 
 dol_include_once('/atgpconnector/class/ediformat.class.php');
 
-class EDIFormatSTATUS
+class EDIFormatSTATUS extends EDIFormat
 {
 	public static $remotePath = '/statutdemat/';
 	public static $TSegments = array(
@@ -39,21 +39,32 @@ class EDIFormatSTATUS
 	}
 	
 	public function cronUpdateStatus() {
-		define('INC_FROM_DOLIBARR', true);
+//		define('INC_FROM_DOLIBARR', true);
+		define('INC_FROM_CRON_SCRIPT', true);
 		dol_include_once('/atgpconnector/config.php');
+
+		$this->output = '*** '.date('Y-m-d H:i:s')."\n";
+
 		$files = $this->getFilesFromFTP();
-		$nbUpdate = 0;
-		if(!empty($files)) {
-			foreach ($files as $fileName) {
-				if($this->updateDocStatusFromFile($fileName)) $nbUpdate++;
-			}
+		if ($files === false)
+		{
+			$this->output.= '- getFilesFromFTP return false';
 		}
-		
-		$this->output = count($files).' found. Updates made : '.$nbUpdate;
+		else
+		{
+			$nbUpdate = 0;
+			if(!empty($files)) {
+				foreach ($files as $fileName) {
+					if($this->updateDocStatusFromFile($fileName)) $nbUpdate++;
+				}
+			}
+
+			$this->output.= count($files).' found. Updates made : '.$nbUpdate;
+		}
 	}
 	
 	public function getFilesFromFTP() {
-		global $conf;
+		global $conf,$langs;
 		// Récupération des fichiers statut du FTP
 		if(empty($conf->global->ATGPCONNECTOR_FTP_DISABLE_ALL_TRANSFERS)) // conf cachée
 		{
@@ -62,6 +73,7 @@ class EDIFormatSTATUS
 			$ftpHandle = ftp_connect($conf->global->ATGPCONNECTOR_FTP_HOST, $ftpPort);
 			if($ftpHandle === false)
 			{
+				$this->output.= $langs->trans('ATGPC_CouldNotOpenFTPConnection')."\n";
 				$this->appendError('ATGPC_CouldNotOpenFTPConnection');
 				return false;
 			}
@@ -70,6 +82,7 @@ class EDIFormatSTATUS
 
 			if(! $ftpLogged)
 			{
+				$this->output.= $langs->trans('ATGPC_FTPAuthentificationFailed')."\n";
 				$this->appendError('ATGPC_FTPAuthentificationFailed');
 				return false;
 			}
@@ -79,11 +92,14 @@ class EDIFormatSTATUS
 			$localFiles = array();
 
 			$files = ftp_nlist($ftpHandle, '.');
-			foreach ($files as $fname) {
-				if ($fname == '.' || $fname == '..') continue;
-				if(ftp_get($ftpHandle, $tmpPath.$fname, $fname, FTP_ASCII)) {
-					$localFiles[] = $tmpPath.$fname;
-					ftp_delete($ftpHandle, $fname);
+			if (!empty($files))
+			{
+				foreach ($files as $fname) {
+					if ($fname == '.' || $fname == '..') continue;
+					if(ftp_get($ftpHandle, $tmpPath.$fname, $fname, FTP_ASCII)) {
+						$localFiles[] = $tmpPath.$fname;
+						ftp_delete($ftpHandle, $fname);
+					}
 				}
 			}
 
@@ -99,18 +115,24 @@ class EDIFormatSTATUS
 		$docStatus = '';
 		
 		$fh = fopen($filePath, 'r');
-		
-		while($line = fgetcsv($fh, 0, ATGPCONNECTOR_CSV_SEPARATOR)) {
-			if($line[0] == 'ENT') {
-				$docRef = trim($line[1]);
-				$docType = trim($line[3]);
+		if ($fh)
+		{
+			while($line = fgetcsv($fh, 0, ATGPCONNECTOR_CSV_SEPARATOR)) {
+				if($line[0] == 'ENT') {
+					$docRef = trim($line[1]);
+					$docType = trim($line[3]);
+				}
+				if($line[0] == 'STA') {
+					$docStatus = trim($line[1]);
+					$docStatus = (!empty($this->status[$docStatus])) ? $this->status[$docStatus] : '';
+				}
 			}
-			if($line[0] == 'STA') {
-				$docStatus = trim($line[1]);
-				$docStatus = (!empty($this->status[$docStatus])) ? $this->status[$docStatus] : '';
-			}
+			fclose($fh);
 		}
-		fclose($fh);
+		else
+		{
+			$this->output.= '- updateDocStatusFromFile : fopen $filePath FAILED'."\n";
+		}
 
 		//unlink($filePath);
 		if(!empty($docRef) && !empty($docType) && !empty($docStatus)) {
@@ -124,12 +146,18 @@ class EDIFormatSTATUS
 		if($docType == 'facture') {
 			dol_include_once('/compta/facture/class/facture.class.php');
 			$tmpFac = new Facture($db);
-			if($tmpFac->fetch(0, $docRef)) {
+			if($tmpFac->fetch(0, $docRef) > 0) {
 				$tmpFac->array_options['options_atgp_status'] = $docStatus;
 				$tmpFac->insertExtraFields();
 				return true;
-			};
+			}
+			else
+			{
+				$this->output.= '- updateDocStatus : fetch invoice by ref ['.$docRef.'] FAILED'."\n";
+			}
 		}
+
+		return false;
 	}
 
 	public function afterObjectLoaded()
