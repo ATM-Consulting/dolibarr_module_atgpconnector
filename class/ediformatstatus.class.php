@@ -55,7 +55,7 @@ class EDIFormatSTATUS extends EDIFormat
 			$nbUpdate = 0;
 			if(!empty($files)) {
 				foreach ($files as $fileName) {
-					if($this->updateDocStatusFromFile($fileName)) $nbUpdate++;
+					$nbUpdate+= $this->updateDocStatusFromFile($fileName);
 				}
 			}
 
@@ -113,6 +113,7 @@ class EDIFormatSTATUS extends EDIFormat
 		$docRef = '';
 		$docType = '';
 		$docStatus = '';
+		$nbUpdate = 0;
 		
 		$fh = fopen($filePath, 'r');
 		if ($fh)
@@ -126,6 +127,17 @@ class EDIFormatSTATUS extends EDIFormat
 					$docStatus = trim($line[1]);
 					$docStatus = (!empty($this->status[$docStatus])) ? $this->status[$docStatus] : '';
 				}
+				// Plusieurs factures présentes dans le fichier statut, plusieurs statuts présents également
+				// On met à jour pour chaque facture une fois la fin d'enregistrement atteinte
+				if($line[0] == 'END') {
+					if(!empty($docRef) && !empty($docType) && !empty($docStatus)) {
+						if($this->updateDocStatus($docRef, $docType, $docStatus)) $nbUpdate++;
+						// Réinitialisation pour éviter les potentiels effets de bord
+						$docRef = '';
+						$docType = '';
+						$docStatus = '';
+					}
+				}
 			}
 			fclose($fh);
 		}
@@ -135,9 +147,7 @@ class EDIFormatSTATUS extends EDIFormat
 		}
 
 		//unlink($filePath);
-		if(!empty($docRef) && !empty($docType) && !empty($docStatus)) {
-			return $this->updateDocStatus($docRef, $docType, $docStatus);
-		}
+		return $nbUpdate;
 	}
 	
 	private function updateDocStatus($docRef, $docType, $docStatus) {
