@@ -15,6 +15,7 @@ ATGPCONNECTOR_FTP_PORT=Port
 ATGPCONNECTOR_FTP_USER=Utilisateur
 ATGPCONNECTOR_FTP_PASS=Mot de passe
 ATGPCONNECTOR_FTP_PASS_desc=Laissez vide pour ne pas redéfinir.
+ATGPCONNECTOR_FTP_PASSIVE_MODE=Activer le mode passif
 ATGPC_ActivatedModes=Modes EDI
 ATGPCONNECTOR_DEV_MODE=Mode de tests
 ATGPCONNECTOR_FORMAT_FAC=Format factures FAC@EDI

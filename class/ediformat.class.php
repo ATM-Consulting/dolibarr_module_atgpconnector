@@ -89,6 +89,11 @@ abstract class EDIFormat
 
 			$ftpLogged = ftp_login($ftpHandle, $conf->global->ATGPCONNECTOR_FTP_USER, $conf->global->ATGPCONNECTOR_FTP_PASS);
 
+			if (!empty($conf->global->ATGPCONNECTOR_FTP_PASSIVE_MODE))
+			{
+				ftp_pasv($ftpHandle, true);
+			}
+
 			if(! $ftpLogged)
 			{
 				$this->appendError('ATGPC_FTPAuthentificationFailed');

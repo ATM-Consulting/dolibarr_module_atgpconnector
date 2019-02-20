@@ -107,6 +107,7 @@ setup_print_input_form_part('ATGPCONNECTOR_FTP_HOST');
 setup_print_input_form_part('ATGPCONNECTOR_FTP_PORT', false, '', array('placeholder' => 21));
 setup_print_input_form_part('ATGPCONNECTOR_FTP_USER');
 setup_print_input_form_part('ATGPCONNECTOR_FTP_PASS', false, 'ATGPCONNECTOR_FTP_PASS_desc', array(), 'password');
+setup_print_on_off('ATGPCONNECTOR_FTP_PASSIVE_MODE');
 
 setup_print_title('ATGPC_ActivatedModes');
 
