@@ -267,6 +267,8 @@ class Actionsatgpconnector
 			EDIFormatFACChorus::$remotePath = $conf->global->ATGPCONNECTOR_FORMAT_FAC_CHORUS_PATH;
 		}
 
+		$invoice->_TContacts = $invoice->liste_contact(-1, 'external', 0);
+
 		$formatFAC = new EDIFormatFACChorus($invoice);
 		$documentUploaded = $formatFAC->put();
 
