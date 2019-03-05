@@ -178,6 +178,8 @@ class Actionsatgpconnector
 				setEventMessage($langs->trans('ATGPC_NInvoicesSuccesfullySent', $nbUploadsDone));
 			}
 		}
+
+		return 0;
 	}
 
 
@@ -187,30 +189,7 @@ class Actionsatgpconnector
 
 		if(! empty($object->id)) // $object->id vide si massaction
 		{
-			if(empty($object->thirdparty) && method_exists($object, 'fetch_thirdparty'))
-			{
-				$object->fetch_thirdparty();
-			}
-
-			if(empty($object->array_options) && method_exists($object, 'fetch_optionals'))
-			{
-				$object->fetch_optionals();
-			}
-
-			if(empty($object->linkedObjects) && method_exists($object, 'fetchObjectLinked'))
-			{
-				$object->fetchObjectLinked();
-			}
-
-			$object->_TContacts = $object->liste_contact(-1, 'external', 0);
-
-			foreach($object->_TContacts as &$contactDescriptor)
-			{
-				dol_include_once('/contact/class/contact.class.php');
-
-				$contactDescriptor['_contact'] = new Contact($object->db);
-				$contactDescriptor['_contact']->fetch($contactDescriptor['id']);
-			}
+			$this->_loadAllInvoiceData($object);
 		}
 
 		return ! empty($conf->global->ATGPCONNECTOR_FTP_HOST) && ! empty($conf->global->ATGPCONNECTOR_FTP_USER);
@@ -262,6 +241,8 @@ class Actionsatgpconnector
 	{
 		global $conf, $langs;
 
+		$this->_loadAllInvoiceData($invoice);
+
 		if(! empty($conf->global->ATGPCONNECTOR_FORMAT_FAC_CHORUS_PATH))
 		{
 			EDIFormatFACChorus::$remotePath = $conf->global->ATGPCONNECTOR_FORMAT_FAC_CHORUS_PATH;
@@ -284,6 +265,38 @@ class Actionsatgpconnector
 		// TODO envois groupés
 
 		return $documentUploaded;
+	}
+
+
+	function _loadAllInvoiceData(Facture &$invoice)
+	{
+		if(empty($invoice->thirdparty) && method_exists($invoice, 'fetch_thirdparty'))
+		{
+			$invoice->fetch_thirdparty();
+		}
+
+		if(empty($invoice->array_options) && method_exists($invoice, 'fetch_optionals'))
+		{
+			$invoice->fetch_optionals();
+		}
+
+		if(empty($invoice->linkedObjects) && method_exists($invoice, 'fetchObjectLinked'))
+		{
+			$invoice->fetchObjectLinked();
+		}
+
+		if(empty($invoice->_TContacts))
+		{
+			$invoice->_TContacts = $invoice->liste_contact(-1, 'external', 0);
+
+			foreach ($invoice->_TContacts as &$contactDescriptor)
+			{
+				dol_include_once('/contact/class/contact.class.php');
+
+				$contactDescriptor['_contact'] = new Contact($invoice->db);
+				$contactDescriptor['_contact']->fetch($contactDescriptor['id']);
+			}
+		}
 	}
 
 
