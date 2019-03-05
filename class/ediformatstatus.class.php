@@ -82,9 +82,14 @@ class EDIFormatSTATUS extends EDIFormat
 
 			if(! $ftpLogged)
 			{
-				$this->output.= $langs->trans('ATGPC_FTPAuthentificationFailed')."\n";
+				$this->output .= $langs->trans('ATGPC_FTPAuthentificationFailed')."\n";
 				$this->appendError('ATGPC_FTPAuthentificationFailed');
 				return false;
+			}
+
+			if (!empty($conf->global->ATGPCONNECTOR_FTP_PASSIVE_MODE))
+			{
+				ftp_pasv($ftpHandle, true);
 			}
 
 			$tmpPath = DOL_DATA_ROOT . '/atgpconnector/temp/status/';
