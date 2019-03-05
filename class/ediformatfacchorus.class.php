@@ -633,7 +633,6 @@ class EDIFormatFACChorusSegmentPADIV extends EDIFormatSegment
 			'label' => 'Code pays'
 			, 'data' => '$object->country_code'
 			, 'maxLength' => 3
-			, 'maxLength' => 35
 		)
 		, 11 => array (
 			'label' => 'SIREN'
@@ -772,7 +771,6 @@ class EDIFormatFACChorusSegmentPADDP extends EDIFormatSegment
 			'label' => 'Code pays'
 			, 'data' => '$object->country_code'
 			, 'maxLength' => 3
-			, 'maxLength' => 35
 		)
 		, 11 => array (
 			'label' => 'SIREN'
@@ -911,7 +909,6 @@ class EDIFormatFACChorusSegmentPADSU extends EDIFormatSegment
 			'label' => 'Code pays'
 			, 'data' => '$object->country_code'
 			, 'maxLength' => 3
-			, 'maxLength' => 35
 		)
 		, 11 => array (
 			'label' => 'SIREN'

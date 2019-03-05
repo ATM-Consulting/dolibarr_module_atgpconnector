@@ -253,9 +253,12 @@ class Actionsatgpconnector
 
 		if($documentUploaded)
 		{
-			$this->_insertAutomaticActionComm($invoice, 'INVOICE_SENT_TO_CHORUS');
-			$invoice->array_options['options_atgp_status'] = 201; // Déposée
-			$invoice->insertExtraFields();
+			if(empty($conf->global->ATGPCONNECTOR_FTP_DISABLE_ALL_TRANSFERS))
+			{
+				$this->_insertAutomaticActionComm($invoice, 'INVOICE_SENT_TO_CHORUS');
+				$invoice->array_options['options_atgp_status'] = 201; // Déposée
+				$invoice->insertExtraFields();
+			}
 		}
 		else
 		{
