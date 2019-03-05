@@ -201,16 +201,6 @@ class Actionsatgpconnector
 			{
 				$object->fetchObjectLinked();
 			}
-
-			$object->_TContacts = $object->liste_contact(-1, 'external', 0);
-
-			foreach($object->_TContacts as &$contactDescriptor)
-			{
-				dol_include_once('/contact/class/contact.class.php');
-
-				$contactDescriptor['_contact'] = new Contact($object->db);
-				$contactDescriptor['_contact']->fetch($contactDescriptor['id']);
-			}
 		}
 
 		return ! empty($conf->global->ATGPCONNECTOR_FTP_HOST) && ! empty($conf->global->ATGPCONNECTOR_FTP_USER);
@@ -265,6 +255,16 @@ class Actionsatgpconnector
 		if(! empty($conf->global->ATGPCONNECTOR_FORMAT_FAC_CHORUS_PATH))
 		{
 			EDIFormatFACChorus::$remotePath = $conf->global->ATGPCONNECTOR_FORMAT_FAC_CHORUS_PATH;
+		}
+
+		$invoice->_TContacts = $invoice->liste_contact(-1, 'external', 0);
+
+		foreach($invoice->_TContacts as &$contactDescriptor)
+		{
+			dol_include_once('/contact/class/contact.class.php');
+
+			$contactDescriptor['_contact'] = new Contact($invoice->db);
+			$contactDescriptor['_contact']->fetch($contactDescriptor['id']);
 		}
 
 		$formatFAC = new EDIFormatFACChorus($invoice);
