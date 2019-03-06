@@ -114,13 +114,24 @@ class EDIFormatSTATUS extends EDIFormat
 				});
 
 				$nbUpdate = 0;
+				$this->db->begin();
 				foreach ($files as $filename)
 				{
 					$this->output.= 'Intégration de '.$filename."\n";
 					$nbUpdate+= $this->updateDocStatusFromFile($tmpPath.$filename);
 				}
 
-				$this->output.= "\n\n".'$nbUpdate = '.$nbUpdate;
+				$this->output.= "\n\n".'$nbUpdate = '.$nbUpdate."\n";
+				if ($this->error > 0)
+				{
+					$this->db->rollBack();
+					$this->output.= 'Error ('.$this->error.') => ROLLBACK';
+				}
+				else
+				{
+					$this->db->commit();
+					$this->output.= 'OK => COMMIT';
+				}
 			}
 			elseif (is_file($tmpPath.$filename))
 			{
