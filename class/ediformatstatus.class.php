@@ -83,19 +83,24 @@ class EDIFormatSTATUS extends EDIFormat
 
 	public function cronUpdateStatusFromLocalFile($filename)
 	{
-		define('INC_FROM_DOLIBARR', true);
-		dol_include_once('/atgpconnector/config.php');
-
-		$tmpPath = DOL_DATA_ROOT . '/atgpconnector/temp/status/';
-
-		if (is_file($tmpPath.$filename))
+		$action = GETPOST('action');
+		// Pour éviter de déclancher le comportement via la tache cron, je veux exécuter ce code que s'il s'agit d'un lancement manuel
+		if ($action == 'execute')
 		{
-			$nbUpdate = $this->updateDocStatusFromFile($tmpPath.$filename);
-			$this->output.= "\n\n".'$nbUpdate = '.$nbUpdate;
-		}
-		else
-		{
-			$this->output = 'Fichier introuvable : '.$tmpPath.$filename;
+			define('INC_FROM_DOLIBARR', true);
+			dol_include_once('/atgpconnector/config.php');
+
+			$tmpPath = DOL_DATA_ROOT . '/atgpconnector/temp/status/';
+
+			if (is_file($tmpPath.$filename))
+			{
+				$nbUpdate = $this->updateDocStatusFromFile($tmpPath.$filename);
+				$this->output.= "\n\n".'$nbUpdate = '.$nbUpdate;
+			}
+			else
+			{
+				$this->output = 'Fichier introuvable : '.$tmpPath.$filename;
+			}
 		}
 
 		return 0;
