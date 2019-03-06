@@ -76,3 +76,8 @@ Modify=Modifier
 Reopen=Rouvrir
 ToClone=Cloner
 Delete=Supprimer
+
+
+
+
+ATGPC_FTP_is_disable=La configuration désactivant toutes les connexions FTP est active

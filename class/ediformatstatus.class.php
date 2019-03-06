@@ -4,6 +4,12 @@ dol_include_once('/atgpconnector/class/ediformat.class.php');
 
 class EDIFormatSTATUS extends EDIFormat
 {
+	/** @var DoliDB */
+	public $db;
+
+	/** @var integer count error */
+	public $error = 0;
+
 	public static $remotePath = '/statutdemat/';
 	public static $TSegments = array(
 		'ATGP' => array(
@@ -23,25 +29,32 @@ class EDIFormatSTATUS extends EDIFormat
 			, 'object' => '$object->lines'
 		)
 	);
-	
+
+	/** @var array Table of status id from c_atgpconnector_status dictionary by code */
+	public $TStatusIdByCode = array();
+
 	public function __construct()
 	{
 		global $db;
-		
-		// Load status from dictionnary
-		$this->status = array();
-		
+
+		$this->db = $db;
+
 		$sql = 'SELECT rowid, code FROM '.MAIN_DB_PREFIX.'c_atgpconnector_status';
-		$resql = $db->query($sql);
-		while($obj = $db->fetch_object($resql)) {
-			$this->status[$obj->code] = $obj->rowid;
+		$resql = $this->db->query($sql);
+		while($obj = $this->db->fetch_object($resql)) {
+			$this->TStatusIdByCode[$obj->code] = $obj->rowid;
 		}
 	}
 	
-	public function cronUpdateStatus() {
+	public function cronUpdateStatus()
+	{
+		global $langs;
+
 		define('INC_FROM_DOLIBARR', true);
 //		define('INC_FROM_CRON_SCRIPT', true);
 		dol_include_once('/atgpconnector/config.php');
+
+		$langs->load('atgpconnector@atgpconnector');
 
 		$this->output = '*** '.date('Y-m-d H:i:s')."\n";
 
@@ -61,6 +74,31 @@ class EDIFormatSTATUS extends EDIFormat
 
 			$this->output.= count($files).' found. Updates made : '.$nbUpdate;
 		}
+
+		if ($this->error > 0) $this->output.= "\n\n".'NB error = '.$this->error;
+
+		return 0;
+	}
+
+
+	public function cronUpdateStatusFromLocalFile($filename)
+	{
+		define('INC_FROM_DOLIBARR', true);
+		dol_include_once('/atgpconnector/config.php');
+
+		$tmpPath = DOL_DATA_ROOT . '/atgpconnector/temp/status/';
+
+		if (is_file($tmpPath.$filename))
+		{
+			$nbUpdate = $this->updateDocStatusFromFile($tmpPath.$filename);
+			$this->output.= "\n\n".'$nbUpdate = '.$nbUpdate;
+		}
+		else
+		{
+			$this->output = 'Fichier introuvable : '.$tmpPath.$filename;
+		}
+
+		return 0;
 	}
 	
 	public function getFilesFromFTP() {
@@ -73,6 +111,7 @@ class EDIFormatSTATUS extends EDIFormat
 			$ftpHandle = ftp_connect($conf->global->ATGPCONNECTOR_FTP_HOST, $ftpPort);
 			if($ftpHandle === false)
 			{
+				$this->error++;
 				$this->output.= $langs->trans('ATGPC_CouldNotOpenFTPConnection')."\n";
 				$this->appendError('ATGPC_CouldNotOpenFTPConnection');
 				return false;
@@ -82,6 +121,7 @@ class EDIFormatSTATUS extends EDIFormat
 
 			if(! $ftpLogged)
 			{
+				$this->error++;
 				$this->output .= $langs->trans('ATGPC_FTPAuthentificationFailed')."\n";
 				$this->appendError('ATGPC_FTPAuthentificationFailed');
 				return false;
@@ -112,6 +152,11 @@ class EDIFormatSTATUS extends EDIFormat
 			
 			return $localFiles;
 		}
+		else
+		{
+			$this->output .= $langs->trans('ATGPC_FTP_is_disable')."\n";
+			return false;
+		}
 	}
 
 	private function updateDocStatusFromFile($filePath) {
@@ -128,9 +173,9 @@ class EDIFormatSTATUS extends EDIFormat
 					$docRef = trim($line[1]);
 					$docType = trim($line[3]);
 				}
-				if($line[0] == 'STA') {
+				elseif($line[0] == 'STA') {
 					$docStatus = trim($line[1]);
-					$docStatus = (!empty($this->status[$docStatus])) ? $this->status[$docStatus] : '';
+					$docStatus = (!empty($this->TStatusIdByCode[$docStatus])) ? $this->TStatusIdByCode[$docStatus] : '';
 				}
 				// Plusieurs factures présentes dans le fichier statut, plusieurs statuts présents également
 				// On met à jour pour chaque facture une fois la fin d'enregistrement atteinte
@@ -148,26 +193,43 @@ class EDIFormatSTATUS extends EDIFormat
 		}
 		else
 		{
+			$this->error++;
 			$this->output.= '- updateDocStatusFromFile : fopen $filePath FAILED'."\n";
 		}
 
 		//unlink($filePath);
 		return $nbUpdate;
 	}
-	
+
 	private function updateDocStatus($docRef, $docType, $docStatus) {
-		global $db;
-		
-		if($docType == 'facture') {
-			dol_include_once('/compta/facture/class/facture.class.php');
-			$tmpFac = new Facture($db);
-			if($tmpFac->fetch(0, $docRef) > 0) {
-				$tmpFac->array_options['options_atgp_status'] = $docStatus;
-				$tmpFac->insertExtraFields();
-				return true;
+
+		if($docType == 'facture')
+		{
+			require_once DOL_DOCUMENT_ROOT.'/compta/facture/class/facture.class.php';
+
+			$facture = new Facture($this->db);
+			if ($facture->fetch(0, $docRef) > 0)
+			{
+				$facture->array_options['options_atgp_status'] = $docStatus;
+				$res = $facture->insertExtraFields();
+				if ($res == 0)
+				{
+					$this->error++;
+					$this->output.= '- updateDocStatus : Facture [$docRef] échec maj du statut (insertExtraFields a retourné la valeur 0 => array_options est vide)'."\n";
+				}
+				elseif ($res < 0)
+				{
+					$this->error++;
+					$this->output.= '- updateDocStatus : Facture [$docRef] erreur maj du statut (lasterror = '.$facture->error.')'."\n";
+				}
+				else
+				{
+					return true;
+				}
 			}
 			else
 			{
+				$this->error++;
 				$this->output.= '- updateDocStatus : fetch invoice by ref ['.$docRef.'] FAILED'."\n";
 			}
 		}
