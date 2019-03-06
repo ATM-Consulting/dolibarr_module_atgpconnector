@@ -85,7 +85,7 @@ class EDIFormatSTATUS extends EDIFormat
 	{
 		$action = GETPOST('action');
 		// Pour éviter de déclancher le comportement via la tache cron, je veux exécuter ce code que s'il s'agit d'un lancement manuel
-		if ($action == 'execute')
+		if ($action == 'confirm_execute')
 		{
 			define('INC_FROM_DOLIBARR', true);
 			dol_include_once('/atgpconnector/config.php');
