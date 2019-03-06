@@ -92,7 +92,37 @@ class EDIFormatSTATUS extends EDIFormat
 
 			$tmpPath = DOL_DATA_ROOT . '/atgpconnector/temp/status/';
 
-			if (is_file($tmpPath.$filename))
+			if ($filename == 'all')
+			{
+				$files=array();
+				$dir = opendir($tmpPath);
+				while(false != ($file = readdir($dir))) {
+					if(($file != ".") && ($file != "..") && !is_dir($tmpPath.$file)) {
+						$files[] = $file; // put in array.
+					}
+				}
+
+				usort($files, function($a, $b) {
+					$date_a = explode('_', $a);
+					$date_a = $date_a[2];
+					$date_b = explode('_', $b);
+					$date_b = $date_b[2];
+
+					if ($date_a < $date_b) return -1;
+					elseif ($date_a > $date_b) return 1;
+					else return 0;
+				});
+
+				$nbUpdate = 0;
+				foreach ($files as $filename)
+				{
+					$this->output.= 'Intégration de '.$filename."\n";
+					$nbUpdate+= $this->updateDocStatusFromFile($tmpPath.$filename);
+				}
+
+				$this->output.= "\n\n".'$nbUpdate = '.$nbUpdate;
+			}
+			elseif (is_file($tmpPath.$filename))
 			{
 				$nbUpdate = $this->updateDocStatusFromFile($tmpPath.$filename);
 				$this->output.= "\n\n".'$nbUpdate = '.$nbUpdate;
