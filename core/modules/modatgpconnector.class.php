@@ -96,7 +96,7 @@ class modatgpconnector extends DolibarrModules
 
 		// Data directories to create when module is enabled.
 		// Example: this->dirs = array("/atgpconnector/temp");
-		$this->dirs = array('/atgpconnector/temp', '/atgpconnector/temp/status');
+		$this->dirs = array('/atgpconnector/temp', '/atgpconnector/temp/status', '/atgpconnector/temp/partinchorus');
 
 		// Config pages. Put here list of php page, stored into atgpconnector/admin directory, to use to setup module.
 		$this->config_page_url = array("atgpconnector_setup.php@atgpconnector");
@@ -331,6 +331,39 @@ class modatgpconnector extends DolibarrModules
 		// $this->export_sql_end[$r] .=' WHERE f.fk_soc = s.rowid AND f.rowid = fd.fk_facture';
 		// $this->export_sql_order[$r] .=' ORDER BY s.nom';
 		// $r++;
+
+		// On renseigne l'attribut $this->cronjobs standard à null : si c'était un tableau, même vide, les crons créés
+		// seraient supprimés à la désactivation du module... De ce fait, et aussi parce qu'on ne peut pas spécifier
+		// de date de première exécution avec la méthode standard, on gère les crons dans cette classe - MdLL, 03/04/19
+		$this->cronjobs = null;
+		$this->_cronjobs = array();
+		$this->_cronjobs[] = array(
+			'label' => '@GP - Chorus - Mise à jour des statuts des factures'
+			, 'jobtype' => 'method'
+			, 'classesname' => '/atgpconnector/class/ediformatstatus.class.php'
+			, 'objectname' => 'EDIFormatSTATUS'
+			, 'methodename' => 'cronUpdateStatus'
+			, 'parameters' => ''
+			, 'frequency' => 1
+			, 'unitfrequency' => 3600
+			, 'datestart' => dol_mktime(dol_print_date(dol_now('tzserver'), '%H'), 0, 0, dol_print_date(dol_now('tzserver'), '%m'), dol_print_date(dol_now('tzserver'), '%d'), dol_print_date(dol_now('tzserver'), '%Y'))
+			, 'datenextrun' => dol_mktime(dol_print_date(dol_now('tzserver'), '%H'), 0, 0, dol_print_date(dol_now('tzserver'), '%m'), dol_print_date(dol_now('tzserver'), '%d'), dol_print_date(dol_now('tzserver'), '%Y'))
+			, 'comment' => ''
+		);
+
+		$this->_cronjobs[] = array(
+			'label' => '@GP - Chorus - Mise à jour des tiers'
+			, 'jobtype' => 'method'
+			, 'classesname' => '/atgpconnector/class/ediformatpartinchorus.class.php'
+			, 'objectname' => 'EDIFormatPARTINChorus'
+			, 'methodename' => 'cronUpdateCompanies'
+			, 'parameters' => ''
+			, 'frequency' => 1
+			, 'unitfrequency' => 86400
+			, 'datestart' => dol_mktime(1, 0, 0, dol_print_date(dol_now('tzserver'), '%m'), dol_print_date(dol_now('tzserver'), '%d'), dol_print_date(dol_now('tzserver'), '%Y'))
+			, 'datenextrun' => dol_mktime(1, 0, 0, dol_print_date(dol_now('tzserver'), '%m'), dol_print_date(dol_now('tzserver'), '%d'), dol_print_date(dol_now('tzserver'), '%Y'))
+			, 'comment' => ''
+		);
 	}
 
 	/**
@@ -350,6 +383,7 @@ class modatgpconnector extends DolibarrModules
 		// require dol_buildpath('/atgpconnector/script/create-maj-base.php');
 
 		$this->_addExtrafields();
+		$this->_addCronjobs();
 
 		$result=$this->_load_tables('/atgpconnector/sql/');
 
@@ -366,6 +400,8 @@ class modatgpconnector extends DolibarrModules
 	 */
 	function remove($options='')
 	{
+		$this->_disableCronjobs();
+
 		$sql = array();
 
 		return $this->_remove($sql, $options);
@@ -378,7 +414,152 @@ class modatgpconnector extends DolibarrModules
 
 		$extrafields = new ExtraFields($this->db);
 
-		$ret = $extrafields->addExtraField('atgp_status', 'ATGPC_ATGPStatus', 'sellist', 1, '', 'facture', 0, 0, '', array('options' => array('c_atgpconnector_status:label:rowid::active=1' => null)), 0, '', -1, 0, '', '', 'atgpconnector@atgpconnector');
+		$yesNoParams = array('options' => array(1 => 'non', 2 => 'oui'));
+
+		// Thirdparties
+		$ret = $extrafields->addExtraField('code_service', 'ATGPC_ChorusServiceCodeRequired', 'select', 60, '', 'societe', 0, 0, '', $yesNoParams, 1, '', -1, 0, '', '', 'atgpconnector@atgpconnector');
+		$ret = $extrafields->addExtraField('n_eng', 'ATGPC_ChorusEngagementCodeRequired', 'select', 70, '', 'societe', 0, 0, '', $yesNoParams, 1, '', -1, 0, '', '', 'atgpconnector@atgpconnector');
+		$ret = $extrafields->addExtraField('cs_engage', 'ATGPC_ChorusServiceOrEngagementCodeRequired', 'select', 80, '', 'societe', 0, 0, '', $yesNoParams, 1, '', -1, 0, '', '', 'atgpconnector@atgpconnector');
+		$ret = $extrafields->addExtraField('moa_pub', 'ATGPC_ChorusCompanyPublicMOA', 'select', 90, '', 'societe', 0, 0, '', $yesNoParams, 1, '', -1, 0, '', '', 'atgpconnector@atgpconnector');
+		$ret = $extrafields->addExtraField('moa', 'ATGPC_ChorusCompanyMOA', 'select', 100, '', 'societe', 0, 0, '', $yesNoParams, 1, '', -1, 0, '', '', 'atgpconnector@atgpconnector');
+		$ret = $extrafields->addExtraField('active', 'ATGPC_ChorusCompanyActive', 'select', 110, '', 'societe', 0, 0, '', $yesNoParams, 1, '', -1, 0, '', '', 'atgpconnector@atgpconnector');
+
+		// Contacts/Addresses
 		$ret = $extrafields->addExtraField('service_code', 'ATGPC_ChorusServiceCode', 'varchar', 1, 64, 'socpeople', 0, 0, '', array(), 1, '', 1, 0, '', '', 'atgpconnector@atgpconnector');
+
+		// Invoices
+		$ret = $extrafields->addExtraField('atgp_status', 'ATGPC_ATGPStatus', 'sellist', 1, '', 'facture', 0, 0, '', array('options' => array('c_atgpconnector_status:label:rowid::active=1' => null)), 0, '', -1, 0, '', '', 'atgpconnector@atgpconnector');
+	}
+
+
+	function _addCronjobs()
+	{
+		global $user;
+
+		if(empty($this->_cronjobs)) return;
+
+		dol_include_once('/cron/class/cronjob.class.php');
+
+		foreach($this->_cronjobs as $TPlannedCronjob)
+		{
+			$cronjobs = new Cronjob($this->db);
+
+			switch($TPlannedCronjob['jobtype'])
+			{
+				case 'command':
+					$TFilter = array(
+						'module_name' => $this->rights_class
+						, 'jobtype' => $TPlannedCronjob['jobtype']
+						, 'command' => $TPlannedCronjob['command']
+					);
+					break;
+
+				case 'method':
+					$TFilter = array(
+						'module_name' => $this->rights_class
+						, 'jobtype' => $TPlannedCronjob['jobtype']
+						, 'classesname' => $TPlannedCronjob['classesname']
+						, 'objectname' => $TPlannedCronjob['objectname']
+						, 'methodename' => $TPlannedCronjob['methodename']
+					);
+					break;
+
+				default:
+					$TFilter = array();
+			}
+
+			$cronjobs->fetch_all('DESC', 't.rowid', 0, 0, -1, $TFilter);
+
+			if(empty($cronjobs->lines))
+			{
+				$newCronjob = new Cronjob($this->db);
+
+				foreach($TPlannedCronjob as $key => $value)
+				{
+					$newCronjob->{$key} = $value;
+				}
+
+				$newCronjob->module_name = $this->rights_class;
+				$newCronjob->status = 1;
+
+				$newCronjob->create($user);
+			}
+			else
+			{
+				$line = $cronjobs->lines[0];
+
+				$targetCronjob = new Cronjob($this->db);
+				$targetCronjob->fetch($line->id);
+
+				foreach($TPlannedCronjob as $key => $value)
+				{
+					$TFilterKeys = array_keys($TFilter);
+
+					// On n'écrase pas les clés qui identifient la tâche
+					if(! in_array($key, $TFilterKeys))
+					{
+						$targetCronjob->{$key} = $value;
+					}
+				}
+
+				$targetCronjob->status = 1;
+
+				$targetCronjob->update($user);
+			}
+		}
+	}
+
+
+	function _disableCronjobs()
+	{
+		global $user;
+
+		if(empty($this->_cronjobs)) return;
+
+		dol_include_once('/cron/class/cronjob.class.php');
+
+		foreach($this->_cronjobs as $TPlannedCronjob)
+		{
+			$cronjobs = new Cronjob($this->db);
+
+			switch($TPlannedCronjob['jobtype'])
+			{
+				case 'command':
+					$TFilter = array(
+						'module_name' => $this->rights_class
+						, 'jobtype' => $TPlannedCronjob['jobtype']
+						, 'command' => $TPlannedCronjob['command']
+					);
+					break;
+
+				case 'method':
+					$TFilter = array(
+						'module_name' => $this->rights_class
+						, 'jobtype' => $TPlannedCronjob['jobtype']
+						, 'classesname' => $TPlannedCronjob['classesname']
+						, 'objectname' => $TPlannedCronjob['objectname']
+						, 'methodename' => $TPlannedCronjob['methodename']
+					);
+					break;
+
+				default:
+					$TFilter = array();
+			}
+
+			$cronjobs->fetch_all('DESC', 't.rowid', 0, 0, -1, $TFilter);
+
+			if(! empty($cronjobs->lines))
+			{
+				foreach($cronjobs->lines as $line)
+				{
+					$targetCronjob = new Cronjob($this->db);
+					$targetCronjob->fetch($line->id);
+
+					$targetCronjob->status = 0;
+
+					$targetCronjob->update($user);
+				}
+			}
+		}
 	}
 }
