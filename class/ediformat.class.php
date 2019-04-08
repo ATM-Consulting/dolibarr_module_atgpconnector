@@ -117,6 +117,40 @@ abstract class EDIFormat
 	}
 
 
+	public final function read($csvHandle)
+	{
+		global $conf;
+
+		$line = fgetcsv($csvHandle, 0, ATGPCONNECTOR_CSV_SEPARATOR);
+
+		// fgetcsv peut retourner NULL, FALSE, ou un array() vide
+		if(! is_array($line) && empty($line))
+		{
+			return false;
+		}
+
+		return array_map(array($this, 'sanitizeCell'), $line);
+	}
+
+
+	public final function sanitizeCell($cell)
+	{
+		global $conf;
+
+		$encodingIn = mb_detect_encoding($cell);
+
+		if($encodingIn === false)
+		{
+			$encodingIn = 'ASCII';
+		}
+
+		return trim(iconv($encodingIn, $conf->file->character_set_client, $cell));
+	}
+
+
+	/**
+	 * A utiliser comme Translate::trans()
+	 */
 	protected function appendError()
 	{
 		global $langs;
@@ -139,7 +173,7 @@ abstract class EDIFormatSegment
 
 		foreach(static::$TFields as $index => $TFieldDescritor)
 		{
-			$data = eval('return ' . $TFieldDescritor['data'] . ';');
+			$data = eval('return ' . $TFieldDescritor['data'] . ';'); // Utilise $object
 			$data = trim($data);
 			$data = str_replace(ATGPCONNECTOR_CSV_SEPARATOR, ' ', $data);
 			$data = substr($data, 0, $TFieldDescritor['maxLength']);

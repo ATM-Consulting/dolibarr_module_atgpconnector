@@ -119,6 +119,12 @@ dol_include_once('/atgpconnector/class/ediformatfacchorus.class.php');
 
 setup_print_input_form_part('ATGPCONNECTOR_FORMAT_FAC_CHORUS_PATH', false, '', array('placeholder' => EDIFormatFACChorus::$remotePath));
 
+setup_print_on_off('ATGPCONNECTOR_FORMAT_PARTIN_CHORUS');
+
+dol_include_once('/atgpconnector/class/ediformatpartinchorus.class.php');
+
+setup_print_input_form_part('ATGPCONNECTOR_FORMAT_PARTIN_CHORUS_PATH', false, '', array('placeholder' => EDIFormatPARTINChorus::$remotePath));
+
 
 $var=!$var;
 

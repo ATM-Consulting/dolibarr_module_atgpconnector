@@ -16,12 +16,14 @@ ATGPCONNECTOR_FTP_USER=Utilisateur
 ATGPCONNECTOR_FTP_PASS=Mot de passe
 ATGPCONNECTOR_FTP_PASS_desc=Laissez vide pour ne pas redéfinir.
 ATGPCONNECTOR_FTP_PASSIVE_MODE=Activer le mode passif
-ATGPC_ActivatedModes=Modes EDI
+ATGPC_ActivatedModes=Formats EDI
 ATGPCONNECTOR_DEV_MODE=Mode de tests
 ATGPCONNECTOR_FORMAT_FAC=Format factures FAC@EDI
-ATGPCONNECTOR_FORMAT_FAC_CHORUS=Mode Chorus
-ATGPCONNECTOR_FORMAT_FAC_CHORUS_PATH=Mode Chorus : emplacement du dossier distant
-ATGPCONNECTOR_FORMAT_FAC_CHORUS_CATEGORY=Mode Chorus : catégorie de clients/prospects impactés
+ATGPCONNECTOR_FORMAT_FAC_CHORUS=Format factures FAC@EDI Chorus
+ATGPCONNECTOR_FORMAT_FAC_CHORUS_PATH=Format factures FAC@EDI Chorus : emplacement du dossier distant
+ATGPCONNECTOR_FORMAT_PARTIN_CHORUS=Format tiers PARTIN@EDI Chorus
+ATGPCONNECTOR_FORMAT_PARTIN_CHORUS_PATH=Format tiers PARTIN@EDI Chorus : emplacement du dossier distant
+ATGPCONNECTOR_FORMAT_FAC_CHORUS_CATEGORY=Chorus : catégorie de clients/prospects impactés
 
 
 
@@ -81,3 +83,11 @@ Delete=Supprimer
 
 
 ATGPC_FTP_is_disable=La configuration désactivant toutes les connexions FTP est active
+
+# EXTRAFIELDS
+ATGPC_ChorusServiceCodeRequired=Chorus - Code service obligatoire
+ATGPC_ChorusEngagementCodeRequired=Chorus - Numéro d’engagement obligatoire
+ATGPC_ChorusServiceOrEngagementCodeRequired=Chorus - Code service ou engagement obligatoire
+ATGPC_ChorusCompanyPublicMOA=Chorus - Structure a une MOA publique
+ATGPC_ChorusCompanyMOA=Chorus - Structure est une MOA
+ATGPC_ChorusCompanyActive=Chorus - Structure active
