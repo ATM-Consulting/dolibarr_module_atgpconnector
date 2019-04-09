@@ -80,6 +80,8 @@ class Actionsatgpconnector
 
 			return $documentSent ? 0 : -1;
 		}
+
+		return 0;
 	}
 
 
@@ -169,7 +171,7 @@ class Actionsatgpconnector
 						$nbUploadsDone++;
 					}
 				} else {
-					setEventMessage($langs->trans('ATGPC_InvoiceNotChorusEligible', $invoice->ref));
+					setEventMessage($langs->trans('ATGPC_InvoiceNotChorusEligible', $invoice->ref), 'warnings');
 				}
 			}
 
@@ -249,25 +251,35 @@ class Actionsatgpconnector
 		}
 
 		$formatFAC = new EDIFormatFACChorus($invoice);
-		$documentUploaded = $formatFAC->put();
 
-		if($documentUploaded)
-		{
-			if(empty($conf->global->ATGPCONNECTOR_FTP_DISABLE_ALL_TRANSFERS))
-			{
-				$this->_insertAutomaticActionComm($invoice, 'INVOICE_SENT_TO_CHORUS');
-				$invoice->array_options['options_atgp_status'] = 201; // Déposée
-				$invoice->insertExtraFields();
-			}
-		}
+		if (!empty($formatFAC->TErrors))
+        {
+            setEventMessage($formatFAC->TErrors, 'errors');
+        }
 		else
-		{
-			setEventMessages($langs->trans('ATGPC_ErrorForInvoice', $invoice->ref), $formatFAC->TErrors, 'errors');
-		}
+        {
+            $documentUploaded = $formatFAC->put();
 
-		// TODO envois groupés
+            if($documentUploaded)
+            {
+                if(empty($conf->global->ATGPCONNECTOR_FTP_DISABLE_ALL_TRANSFERS))
+                {
+                    $this->_insertAutomaticActionComm($invoice, 'INVOICE_SENT_TO_CHORUS');
+                    $invoice->array_options['options_atgp_status'] = 201; // Déposée
+                    $invoice->insertExtraFields();
+                }
+            }
+            else
+            {
+                setEventMessages($langs->trans('ATGPC_ErrorForInvoice', $invoice->ref), $formatFAC->TErrors, 'errors');
+            }
 
-		return $documentUploaded;
+		    // TODO envois groupés
+
+            return $documentUploaded;
+        }
+
+		return false;
 	}
 
 

@@ -92,16 +92,53 @@ class EDIFormatFACChorus extends EDIFormat
 
 
 		// Linked order
+		if (!empty($this->object->linkedObjects['commande']))
+        {
+            reset($this->object->linkedObjects['commande']);
+            $fkey = key($this->object->linkedObjects['commande']);
+            $this->object->origin_object = $this->object->linkedObjects['commande'][$fkey];
+        }
+		elseif (!empty($this->object->linkedObjects['contrat']))
+        {
+            reset($this->object->linkedObjects['contrat']);
+            $fkey = key($this->object->linkedObjects['contrat']);
+            $this->object->origin_object = $this->object->linkedObjects['contrat'][$fkey];
+            $this->object->origin_object->ref_client = $this->object->origin_object->ref_customer;
+            $this->object->origin_object->date = $this->object->origin_object->date_contrat;
+        }
+		else
+        {
+            $this->object->origin_object = $this->object;
+        }
 
-		$TCommandes = array_values($this->object->linkedObjects['commande']);
 
-		if(! empty($TCommandes))
-		{
-			$order = $TCommandes[0];
 
-			$this->object->_order_chorus = $order;
-		}
 
+        // Check required fields
+        if (!empty($this->object->thirdparty->array_options['options_code_service']) && $this->object->thirdparty->array_options['options_code_service'] === '2')
+        {
+            if (empty($this->object->thirdparty->_chorusServiceCode) || ctype_space($this->object->thirdparty->_chorusServiceCode))
+            {
+                $this->appendError('ATGPC_ErrorRequiredField', $this->object->ref, 'Code service');
+            }
+        }
+        if (!empty($this->object->thirdparty->array_options['options_n_eng']) && $this->object->thirdparty->array_options['options_n_eng'] === '2')
+        {
+            if (empty($this->object->origin_object->ref_client) || ctype_space($this->object->origin_object->ref_client))
+            {
+                $this->appendError('ATGPC_ErrorRequiredField', $this->object->ref, 'Numéro d\'engagement ');
+            }
+        }
+        if (!empty($this->object->thirdparty->array_options['options_cs_engage']) && $this->object->thirdparty->array_options['options_cs_engage'] === '2')
+        {
+
+            if (
+                (empty($this->object->thirdparty->_chorusServiceCode) || ctype_space($this->object->thirdparty->_chorusServiceCode))
+                && (empty($this->object->origin_object->ref_client) || ctype_space($this->object->origin_object->ref_client))
+            ) {
+                $this->appendError('ATGPC_ErrorRequiredField', $this->object->ref, 'Code service ou Numéro d\'engagement');
+            }
+        }
 
 		// TVA
 
@@ -310,18 +347,18 @@ class EDIFormatFACChorusSegmentENT extends EDIFormatSegment
 		)
 		, 2 => array (
 			'label' => 'Numéro de commande du client ou numéro d\'engagement'
-			, 'data' => '$object->_order_chorus->ref_client'
+			, 'data' => '$object->origin_object->ref_client'
 			, 'maxLength' => 35
 			, 'required' => true
 		)
 		, 3 => array (
 			'label' => 'Date de commande ou d\'engagement JJ/MM/AAAA'
-			, 'data' => 'dol_print_date($object->_order_chorus->date, "%d/%m/%Y")'
+			, 'data' => 'dol_print_date($object->origin_object->date, "%d/%m/%Y")'
 			, 'maxLength' => 10
 		)
 		, 4 => array (
 			'label' => 'Heure de commande ou d\'engagement HH:MN'
-			, 'data' => 'dol_print_date($object->_order_chorus->date, "%H:%M")'
+			, 'data' => 'dol_print_date($object->origin_object->date, "%H:%M")'
 			, 'maxLength' => 5
 		)
 		, 5 => array (
