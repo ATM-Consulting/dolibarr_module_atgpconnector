@@ -59,12 +59,24 @@ abstract class EDIFormat
 				{
 					$TData = $segmentInstance->get($segmentSubObj, $key);
 					fwrite($csvHandle, implode(ATGPCONNECTOR_CSV_SEPARATOR, $TData) . PHP_EOL);
+
+					if (isset($TSegmentDescriptor['FTX']))
+                    {
+                        $val = eval('return '.$TSegmentDescriptor['FTX']['object'].';');
+                        $this->putFTX($csvHandle, $TSegmentDescriptor['FTX'], $val);
+                    }
 				}
 			}
 			else
 			{
 				$TData = $segmentInstance->get($segmentObj);
 				fwrite($csvHandle, implode(ATGPCONNECTOR_CSV_SEPARATOR, $TData) . PHP_EOL);
+
+                if (isset($TSegmentDescriptor['FTX']))
+                {
+                    $val = eval('return '.$TSegmentDescriptor['FTX']['object'].';');
+                    $this->putFTX($csvHandle, $TSegmentDescriptor['FTX'], $val);
+                }
 			}
 		}
 
@@ -116,6 +128,24 @@ abstract class EDIFormat
 		return true;
 	}
 
+	public final function putFTX($csvHandle, $TSegmentDescriptor, $segmentObj)
+    {
+        $segmentInstance = new EDIFormatFACChorusSegmentFTX;
+
+        if(! empty($TSegmentDescriptor['multiple']))
+        {
+            foreach($segmentObj as $key => $segmentSubObj)
+            {
+                $TData = $segmentInstance->get($segmentSubObj, $key);
+                fwrite($csvHandle, implode(ATGPCONNECTOR_CSV_SEPARATOR, $TData) . PHP_EOL);
+            }
+        }
+        else
+        {
+            $TData = $segmentInstance->get($segmentObj);
+            fwrite($csvHandle, implode(ATGPCONNECTOR_CSV_SEPARATOR, $TData) . PHP_EOL);
+        }
+    }
 
 	public final function read($csvHandle)
 	{

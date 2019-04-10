@@ -39,6 +39,10 @@ class EDIFormatFACChorus extends EDIFormat
 			'required' => true
 			, 'multiple' => true
 			, 'object' => '$object->lines'
+            , 'FTX' => array(
+                'multiple' => true
+                , 'object' => '$segmentSubObj->TDesc'
+            )
 		)
 		, 'PIE' => array(
 			'required' => true
@@ -148,7 +152,7 @@ class EDIFormatFACChorus extends EDIFormat
 		$sign=1;
 		if (isset($this->object->type) && $this->object->type == 2 && ! empty($conf->global->INVOICE_POSITIVE_CREDIT_NOTE)) $sign=-1;
 
-		foreach($this->object->lines as $i => $line)
+		foreach($this->object->lines as $i => &$line)
 		{
 			if($line->product_type == 9) { // Gestion des titres
 				$com = (!empty($line->label)) ? $line->label : '';
@@ -161,6 +165,14 @@ class EDIFormatFACChorus extends EDIFormat
 				unset($this->object->lines[$i]);
 				continue;
 			}
+			else
+            {
+                $line->TDesc = str_split(str_replace(array("\r\n", "\n\r", "\n", "\r"), ' ', strip_tags($line->description)), 350);
+                if (!empty($line->date_start) && !empty($line->date_end))
+                {
+                    $line->TDesc[] = dol_print_date($line->date_start, '%d/%m/%Y').' - '.dol_print_date($line->date_end, '%d/%m/%Y');
+                }
+            }
 			
 			$total_ht = 0;
 			if ($line->special_code != 3)
@@ -1262,6 +1274,35 @@ class EDIFormatFACChorusSegmentLIG extends EDIFormatSegment
 	);
 }
 
+class EDIFormatFACChorusSegmentFTX extends EDIFormatSegment
+{
+    public static $TFields = array (
+        1 => array (
+            'label' => 'Étiquette de segment "FTX"'
+            , 'data' => '"FTX"'
+            , 'maxLength' => 3
+            , 'required' => true
+        )
+    , 2 => array (
+            'label' => 'Code commentaire'
+            , 'data' => '"PRD"'
+            , 'maxLength' => 3
+            , 'required' => true
+        )
+    , 3 => array (
+            'label' => 'Commentaire'
+            , 'data' => '$object' // variable qui contiendra finalement le texte
+            , 'maxLength' => 350
+            , 'required' => true
+        )
+//    , 4 => array (
+//            'label' => 'Commetaire en code'
+//            , 'data' => ''
+//            , 'maxLength' => 10
+//        )
+
+    );
+}
 
 class EDIFormatFACChorusSegmentTVA extends EDIFormatSegment
 {
