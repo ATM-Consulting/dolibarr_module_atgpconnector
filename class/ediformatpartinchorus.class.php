@@ -209,8 +209,8 @@ class EDIFormatPARTINChorus extends EDIFormat
 						$currentCompany->array_options['options_code_service'] = $line[10] + 1;
 						$currentCompany->array_options['options_n_eng'] = $line[9] + 1;
 						$currentCompany->array_options['options_cs_engage'] = $line[11] + 1;
-						$currentCompany->array_options['options_moa_pub'] = $line[8] + 1;
-						$currentCompany->array_options['options_moa'] = $line[7] + 1;
+						$currentCompany->array_options['options_moa_pub'] = $line[7] + 1;
+						$currentCompany->array_options['options_moa'] = $line[8] + 1;
 						$currentCompany->array_options['options_active'] = $line[1] + 1;
 
 						$ret = $currentCompany->update(0, $user);
