@@ -170,7 +170,7 @@ class EDIFormatFACChorus extends EDIFormat
                 $line->TDesc = str_split(str_replace(array("\r\n", "\n\r", "\n", "\r"), ' ', strip_tags($line->description)), 350);
                 foreach ($line->TDesc as $k => $v)
                 {
-                    if (ctype_space($v)) unset($line->TDesc[$k]);
+                    if (ctype_space($v) || empty($v)) unset($line->TDesc[$k]);
                 }
                 if (!empty($line->date_start) && !empty($line->date_end))
                 {
