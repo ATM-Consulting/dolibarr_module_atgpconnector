@@ -168,6 +168,10 @@ class EDIFormatFACChorus extends EDIFormat
 			else
             {
                 $line->TDesc = str_split(str_replace(array("\r\n", "\n\r", "\n", "\r"), ' ', strip_tags($line->description)), 350);
+                foreach ($line->TDesc as $k => $v)
+                {
+                    if (ctype_space($v)) unset($line->TDesc[$k]);
+                }
                 if (!empty($line->date_start) && !empty($line->date_end))
                 {
                     $line->TDesc[] = dol_print_date($line->date_start, '%d/%m/%Y').' - '.dol_print_date($line->date_end, '%d/%m/%Y');
