@@ -124,9 +124,14 @@ class EDIFormatPARTINChorus extends EDIFormat
 			{
 				foreach ($files as $fname) {
 					if ($fname == '.' || $fname == '..') continue;
-					if(ftp_get($ftpHandle, $tmpPath.$fname, $fname, FTP_ASCII)) {
-						$localFiles[] = $tmpPath.$fname;
+					$newFileName = $tmpPath . str_replace('.csv', '_' . dol_print_date(dol_now(), '%d%m%Y_%H%M%S') . '.csv', $fname); 
+					if(ftp_get($ftpHandle, $newFileName, $fname, FTP_ASCII)) {
+						$localFiles[] = $newFileName;
 						ftp_delete($ftpHandle, $fname);
+					}
+					else
+					{
+						$this->output .= 'Cannot download file "' . $fname . '"' . "\n";
 					}
 				}
 			}
