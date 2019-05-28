@@ -388,6 +388,9 @@ class Interfaceatgpconnectortrigger
                     $object->fk_facture_source = null;
 		    $object->paye = 0;
                     $object->update($user);
+		    // Ensuite on vide le champs statut qui n' pas lieu d'être cloné
+                    $object->array_options['options_atgp_status'] = null;
+                    $object->insertExtrafields();
                 }
             }
             dol_syslog(
