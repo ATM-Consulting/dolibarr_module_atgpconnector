@@ -386,6 +386,7 @@ class Interfaceatgpconnectortrigger
                 if ($object->socid == $clone->socid && $soc->array_options['options_active'] == 2){
                     $object->ref_client = $clone->ref_client;
                     $object->fk_facture_source = null;
+		    $object->paye = 0;
                     $object->update($user);
                 }
             }
