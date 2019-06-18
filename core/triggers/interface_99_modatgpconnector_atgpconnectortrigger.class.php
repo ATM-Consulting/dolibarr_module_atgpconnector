@@ -377,6 +377,22 @@ class Interfaceatgpconnectortrigger
 
         // Bills
         elseif ($action == 'BILL_CREATE') {
+            if (in_array('createfromclone',$object->context)){
+                $id = GETPOST('facid');
+                $clone = new Facture($this->db);
+                $clone->fetch($id);
+                $soc = new Societe($this->db);
+                $soc->fetch($object->socid);
+                if ($object->socid == $clone->socid && $soc->array_options['options_active'] == 2){
+                    $object->ref_client = $clone->ref_client;
+                    $object->fk_facture_source = null;
+		    $object->paye = 0;
+                    $object->update($user);
+		    // Ensuite on vide le champs statut qui n' pas lieu d'être cloné
+                    $object->array_options['options_atgp_status'] = null;
+                    $object->insertExtrafields();
+                }
+            }
             dol_syslog(
                 "Trigger '" . $this->name . "' for action '$action' launched by " . __FILE__ . ". id=" . $object->id
             );
