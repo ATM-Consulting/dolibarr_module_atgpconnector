@@ -39,6 +39,10 @@ class EDIFormatFACChorus extends EDIFormat
 			'required' => true
 			, 'multiple' => true
 			, 'object' => '$object->lines'
+			, 'LID' => array(
+				'required' => false
+				, 'object' => '$segmentSubObj'
+			)
             , 'FTX' => array(
                 'multiple' => true
                 , 'object' => '$segmentSubObj->TDesc'
@@ -1277,6 +1281,84 @@ class EDIFormatFACChorusSegmentLIG extends EDIFormatSegment
 */
 	);
 }
+
+
+class EDIFormatFACChorusSegmentLID extends EDIFormatSegment
+{
+	public static $TFields = array (
+		1 => array (
+			'label' => 'Étiquette de segment "LID"'
+			, 'data' => '"LID"'
+			, 'maxLength' => 3
+			, 'required' => true
+		)
+		, 2 => array (
+			'label' => 'Numéro de ligne'
+			, 'data' => '$key + 1'
+			, 'maxLength' => 6
+			, 'required' => true
+		)
+		, 3 => array (
+			'label' => 'Numéro de séquence de calcul'
+			, 'data' => '$key + 1' // variable qui contiendra finalement le texte
+			, 'maxLength' => 1
+			, 'required' => true
+		)
+        , 4 => array (
+            'label' => 'Qualifiant de dégression tarifaire (cf. table LID.4)'
+            , 'data' => '"TD"' // TODO en dur
+            , 'maxLength' => 10
+			, 'required' => true
+        )
+		, 5 => array (
+			'label' => 'Libellé descriptif'
+			, 'data' => '"Remise"' // TODO en dur
+			, 'maxLength' => 10
+			, 'required' => true
+		)
+		, 6 => array (
+			'label' => 'Pourcentage ou montant unitaire'
+			, 'data' => 'sprintf("%12.6f", $object->remise_percent)'
+			, 'maxLength' => 19 // 12\6
+			, 'required' => true
+		)
+		, 7 => array (
+			'label' => 'Unité de quantité (EUR ou PCT)'
+			, 'data' => '"PCT"' // TODO en dur
+			, 'maxLength' => 3
+			, 'required' => true
+		)
+		, 8 => array (
+			'label' => 'Code EAN de la taxe parafiscale (cf table LID.8)'
+			, 'data' => '""'
+			, 'maxLength' => 14
+		)
+		, 9 => array (
+			'label' => 'Taux de TVA de la dégression tarifaire ou taxe parafiscale'
+			, 'data' => 'sprintf("%5.2f", $object->tva_tx)'
+			, 'maxLength' => 8 // 5\2
+			, 'required' => true
+		)
+		, 10 => array (
+			'label' => 'Montant de la dégression, unitaire (si pourcentage indiqué en position 6)'
+			, 'data' => 'sprintf("%12.6f", $object->subprice * $object->remise_percent)'
+			, 'maxLength' => 19 // 12\6
+		)
+		, 11 => array (
+			'label' => 'Montant base de calcul (montant sur lequel est appliqué la dégression)'
+			, 'data' => 'sprintf("%12.6f", $object->subprice)'
+			, 'maxLength' => 19 // 12\6
+			, 'required' => true
+		)
+		, 12 => array (
+			'label' => 'Code règlement (cf table LID.12)'
+			, 'data' => '"2"' // 1 => Hors facture, 2 => Déduit de la facture
+			, 'maxLength' => 1
+			, 'required' => true
+		)
+	);
+}
+
 
 class EDIFormatFACChorusSegmentFTX extends EDIFormatSegment
 {
