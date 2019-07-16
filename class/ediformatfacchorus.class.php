@@ -106,7 +106,7 @@ class EDIFormatFACChorus extends EDIFormat
             $fkey = key($this->object->linkedObjects['commande']);
             $this->object->origin_object = $this->object->linkedObjects['commande'][$fkey];
         }
-		elseif (!empty($this->object->linkedObjects['contrat']))
+		if (empty($this->object->origin_object->ref_client) && !empty($this->object->linkedObjects['contrat']))
         {
             reset($this->object->linkedObjects['contrat']);
             $fkey = key($this->object->linkedObjects['contrat']);
@@ -114,7 +114,7 @@ class EDIFormatFACChorus extends EDIFormat
             $this->object->origin_object->ref_client = $this->object->origin_object->ref_customer;
             $this->object->origin_object->date = $this->object->origin_object->date_contrat;
         }
-		else
+	if(empty($this->object->origin_object->ref_client))
         {
             $this->object->origin_object = $this->object;
         }
