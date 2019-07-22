@@ -365,6 +365,20 @@ class modatgpconnector extends DolibarrModules
 			, 'datenextrun' => dol_mktime(1, 0, 0, dol_print_date(dol_now('tzserver'), '%m'), dol_print_date(dol_now('tzserver'), '%d'), dol_print_date(dol_now('tzserver'), '%Y'))
 			, 'comment' => ''
 		);
+
+		$this->_cronjobs[] = array(
+		    'label' => '@GP - Création de commandes',
+            'jobtype' => 'method',
+            'classesname' => '/atgpconnector/class/ediformatorders.class.php',
+            'objectname' => 'EDIFormatOrders',
+            'methodename' => 'cronCreateOrders',
+            'parameters' => '',
+            'frequency' => 1,
+            'unitfrequency' => 86400,
+            'datestart' => dol_mktime(1, 0, 0, dol_print_date(dol_now('tzserver'), '%m'), dol_print_date(dol_now('tzserver'), '%d'), dol_print_date(dol_now('tzserver'), '%Y')),
+            'datenextrun' => dol_mktime(1, 0, 0, dol_print_date(dol_now('tzserver'), '%m'), dol_print_date(dol_now('tzserver'), '%d'), dol_print_date(dol_now('tzserver'), '%Y')),
+            'comment' => ''
+        );
 	}
 
 	/**
