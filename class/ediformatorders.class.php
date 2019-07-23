@@ -444,52 +444,201 @@ class EDIFormatOrders extends EDIFormat
      * @param string $filepath
      */
     public function createOrdersFromFile($filepath) {
+        global $db, $user;
+
+
+        $syslogContext = ' / launched by ' . __FILE__ . '  ' . __CLASS__ . '::' . __METHOD__;
+
         $f = fopen($filepath, 'r');
         if($f !== false) {
-            $commande = new Commande($this->db);
+
             while($line = fgetcsv($f, 0, ATGPCONNECTOR_CSV_SEPARATOR)) {
 
-                $line[0] = str_replace("@GP", "ATGP", "$line[0]");
-
-                // print definition of col
-                self::dumpLineDataLibelle($line);
-
-                if($line[0] == 'ENT') {
+                if($line[0]=='@GP'){
+                    $commande = new Commande($this->db);
                     // Numéro de document
-                    $commande->ref_client = $line[2];
-
-                    // Date du document
-                    $date = DateTime::createFromFormat('d-m-Y', $line[3]);
-                    $commande->date = $date->getTimestamp();
-
-                    // Date livraison
-                    $date = DateTime::createFromFormat('d-m-Y H:i', $line[6].' '.$line[7]);
-                    $commande->date_livraison = $date->getTimestamp();
-
+                    $commande->import_key = $line[8];
                 }
 
-                // TIERS
-                if($line[0] == 'PAR') {
-                    if($line[1] == 'SU') {
-
-                    }
-                    elseif($line[1] == 'BY') {
-                        $thirdparty = getThirdpartyFromPAR($line, true);
-                        $commande->thirdparty = $thirdparty;
-                        var_dump($commande);
-                    }
+                if($line[0]=='@ND'){
+                    $commande = false;
+                    continue;
                 }
 
+                // print definition of col and data
+                //self::dumpLineDataLibelle($line);
+
+                if(!empty($commande)){
 
 
+
+                    if($line[0] == 'ENT') {
+                        // Numéro de document
+                        $commande->ref_client = $line[2];
+
+                        // check if already imported
+                        if(self::fetchCommandeImported($commande) > 0)
+                        {
+                            $this->output.= 'Skip already imported : '.$commande->ref_client."\n";
+                            $commande = false;
+                            continue;
+                        }
+
+                        // Date du document
+                        $date = DateTime::createFromFormat('d/m/Y', $line[3]);
+                        $commande->date = $date->getTimestamp();
+
+                        // Date livraison
+                        $date = DateTime::createFromFormat('d/m/Y H:i', $line[6].' '.$line[7]);
+                        $commande->date_livraison = $date->getTimestamp();
+
+                    }
+
+                    // TIERS
+                    if($line[0] == 'PAR') {
+                        if($line[1] == 'SU') {
+
+                        }
+                        elseif($line[1] == 'BY') {
+                            // Customer
+                            $thirdparty = self::getThirdpartyFromPAR($line, true);
+                            $commande->thirdparty = $thirdparty;
+                            $commande->socid = $thirdparty->id;
+
+                            $commande->cond_reglement_id = $thirdparty->cond_reglement_id;
+                            $commande->mode_reglement_id = $thirdparty->mode_reglement_id;
+                        }
+                        elseif($line[1] == 'DP') {
+                            // delivery to
+                            $thirdpartyExp = self::getThirdpartyFromPAR($line, true);
+                        }
+                    }
+
+                    // COMMANDE LINES
+                    if($line[0] == 'LIG') {
+
+                        if(empty($commande->id)){
+                            $resCreate = $commande->create($user);
+                            if($resCreate>1)
+                            {
+                                $this->output.= 'Create order '.$commande->error."\n";
+
+                                if(!empty($commande->import_key)){
+                                    // Update request because create dont add import key
+                                    $sql = "UPDATE ".MAIN_DB_PREFIX."commande SET";
+                                    $sql.= " import_key='".$commande->db->escape($commande->import_key)."'";
+                                    $sql.= " WHERE rowid=".$commande->id;
+                                    $commande->db->query($sql);
+                                }
+                            }
+                            else
+                            {
+                                $this->output.= 'Create order Error : '.$commande->error."\n";
+                                dol_syslog('Create order Error : '.$commande->error.$syslogContext,LOG_WARNING);
+                            }
+                        }
+
+                        if(!empty($commande->id)){
+                            $productFetched = 0;
+                            $product = new Product($db);
+                            // Fetch by barcode
+                            if(!empty($line[2]) && $product->fetchObjectFrom($product->table_element, 'barcode', $line[2])){
+                                $productFetched = 1;
+                            }
+
+                            // Fetch by ref
+                            if(!$productFetched && !empty($line[2]) && $product->fetchObjectFrom($product->table_element, 'ref', $line[5])){
+                                $productFetched = 1;
+                            }
+
+
+
+                            $desc                   = $line[9];
+                            $pu_ht                  = $line[8];
+                            $qty                    = $line[6];
+
+                            $txtva                  = 0; // apparement la TVA n'est pas envoyée. ça va être pratique pour la suite
+                            $txlocaltax1 = 0;
+                            $txlocaltax2 = 0;
+                            $fk_product = 0;
+                            $remise_percent = 0;
+
+                            $info_bits = 0;
+                            $fk_remise_except = 0;
+                            $price_base_type = 'HT';
+                            $pu_ttc = 0;
+                            $date_start = '';
+                            $date_end = '';
+                            $type = 0;
+                            $rang = -1;
+                            $special_code = 0;
+                            $fk_parent_line = 0;
+                            $fk_fournprice = null;
+                            $pa_ht = 0;
+                            $label = '';
+                            $array_options = 0;
+                            $fk_unit = null;
+                            $origin = '';
+                            $origin_id = 0;
+                            $pu_ht_devise = 0;
+
+                            if($productFetched)
+                            {
+                                $desc                   = '';
+                                $fk_product = $product->id;
+                                $type = $product->type;
+                            }
+
+
+
+                            $res = $commande->addline($desc, $pu_ht, $qty, $txtva, $txlocaltax1, $txlocaltax2, $fk_product, $remise_percent, $info_bits, $fk_remise_except, $price_base_type, $pu_ttc, $date_start, $date_end, $type, $rang, $special_code, $fk_parent_line, $fk_fournprice, $pa_ht, $label, $array_options, $fk_unit, $origin, $origin_id, $pu_ht_devise);
+
+                        }
+                    }
+                }
             }
-            exit;
+
+            return 0;
         }
     }
+
+    /**
+     *  Load object from specific field
+     *
+     *  @param	Commande	$commande
+     *	@return	int					<0 if KO, Id>0 if OK
+     */
+    public function fetchCommandeImported(Commande $commande)
+    {
+        global $conf, $db;
+
+        $result=false;
+
+        $sql = "SELECT rowid FROM ".MAIN_DB_PREFIX.$commande->table_element;
+        $sql.= " WHERE ref_client = '".$db->escape($commande->ref_client)."' AND import_key = '".$db->escape($commande->import_key)."' ";
+        $sql.= " AND entity = ".$conf->entity;
+
+
+        dol_syslog(__CLASS__.'::'.__METHOD__, LOG_DEBUG);
+        $resql = $db->query($sql);
+        if ($resql)
+        {
+            $row = $db->fetch_row($resql);
+            // Test for avoid error -1
+            if ($row[0] > 0) {
+                $result = $row[0];
+            }
+        }
+
+        return $result;
+    }
+
 
     public static function getThirdpartyFromPAR($line, $autoCreate = false)
     {
         global $db, $conf, $user;
+
+        require_once DOL_DOCUMENT_ROOT .'/core/lib/company.lib.php';
 
         $syslogContext = ' / launched by ' . __FILE__ . '  ' . __CLASS__ . '::' . __METHOD__;
 
@@ -524,6 +673,8 @@ class EDIFormatOrders extends EDIFormat
                 }
                 else{
                     $fetched = -1;
+
+                    $this->output.= 'Fetch third party from EAN Error : '.$obj->rowid."\n";
                     dol_syslog('Fetch third party from EAN Error : '.$obj->rowid.$syslogContext,LOG_WARNING);
                 }
             }
@@ -554,12 +705,14 @@ class EDIFormatOrders extends EDIFormat
                 }
                 else{
                     $fetched = -1;
+                    $this->output.= 'Fetch thirdparty from thirdparty code Error : '.$obj->rowid."\n";
                     dol_syslog('Fetch thirdparty from thirdparty code Error : '.$obj->rowid.$syslogContext,LOG_WARNING);
                 }
             }
         }
         else{
             $fetched = -1;
+            $this->output.= 'Fetch thirdparty from thirdparty code Sql Error : '.$sql."\n";
             dol_syslog('Fetch thirdparty from thirdparty code Sql Error : '.$sql.$syslogContext, LOG_WARNING);
         }
 
@@ -581,12 +734,14 @@ class EDIFormatOrders extends EDIFormat
                     }
                     else{
                         $fetched = -1;
+                        $this->output.= 'Fetch thirdparty from NAME Error : '.$obj->rowid."\n";
                         dol_syslog('Fetch thirdparty from NAME Error : '.$obj->rowid.$syslogContext,LOG_WARNING);
                     }
                 }
             }
             else{
                 $fetched = -1;
+                $this->output.= 'Fetch thirdparty from NAME Sql Error : '.$sql."\n";
                 dol_syslog('Fetch thirdparty from NAME Sql Error : '.$sql.$syslogContext, LOG_WARNING);
             }
         }
@@ -599,6 +754,7 @@ class EDIFormatOrders extends EDIFormat
             $thirdparty->zip                = trim($line[8]);
             $thirdparty->address            = trim($line[5]);
             $thirdparty->town               = trim($line[9]);
+            $thirdparty->client             = 1;
 
 
 
@@ -628,34 +784,12 @@ class EDIFormatOrders extends EDIFormat
             $modCodeClient = new $module;
 
 
-
-            // Load object modCodeFournisseur
-            $module=(! empty($conf->global->SOCIETE_CODECLIENT_ADDON)?$conf->global->SOCIETE_CODECLIENT_ADDON:'mod_codeclient_leopard');
-            if (substr($module, 0, 15) == 'mod_codeclient_' && substr($module, -3) == 'php')
-            {
-                $module = substr($module, 0, dol_strlen($module)-4);
-            }
-            $dirsociete=array_merge(array('/core/modules/societe/'),$conf->modules_parts['societe']);
-            foreach ($dirsociete as $dirroot)
-            {
-                $res=dol_include_once($dirroot.$module.'.php');
-                if ($res) break;
-            }
-            $modCodeFournisseur = new $module;
-
-
-            // Affectation des codes clients / fournisseurs
-            $thirdparty->code_fournisseur = trim($line[11]);
+            // Affectation des codes clients
             $thirdparty->code_client = trim($line[3]);
-
-            if(empty($thirdparty->code_fournisseur))
-            {
-                $thirdparty->code_fournisseur = $modCodeClient->getNextValue($thirdparty,0);
-            }
 
             if(empty($thirdparty->code_client))
             {
-                $thirdparty->code_client = $modCodeFournisseur->getNextValue($thirdparty,0);
+                $thirdparty->code_client = $modCodeClient->getNextValue($thirdparty,0);
             }
 
 
