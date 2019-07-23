@@ -369,10 +369,10 @@ class EDIFormatOrders extends EDIFormat
 
         $langs->load('atgpconnector@atgpconnector');
 
-//        $TFile = $this->getFilesFromFTP();  // Not tested yet
-        $TFile = array(
+        $TFile = $this->getFilesFromFTP();  // Not tested yet
+        /*$TFile = array(
             DOL_DATA_ROOT.'/atgp.csv'    // Just for tests
-        );
+        );*/
         if($TFile === false) {
             $this->output .= '';
         }
