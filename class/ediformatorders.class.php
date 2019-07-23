@@ -448,10 +448,257 @@ class EDIFormatOrders extends EDIFormat
         if($f !== false) {
             $commande = new Commande($this->db);
             while($line = fgetcsv($f, 0, ATGPCONNECTOR_CSV_SEPARATOR)) {
-                var_dump($line);
-                exit;
+
+                $line[0] = str_replace("@GP", "ATGP", "$line[0]");
+
+                // print definition of col
+                self::dumpLineDataLibelle($line);
+
+                if($line[0] == 'ENT') {
+                    // Numéro de document
+                    $commande->ref_client = $line[2];
+
+                    // Date du document
+                    $date = DateTime::createFromFormat('d-m-Y', $line[3]);
+                    $commande->date = $date->getTimestamp();
+
+                    // Date livraison
+                    $date = DateTime::createFromFormat('d-m-Y H:i', $line[6].' '.$line[7]);
+                    $commande->date_livraison = $date->getTimestamp();
+
+                }
+
+                // TIERS
+                if($line[0] == 'PAR') {
+                    if($line[1] == 'SU') {
+
+                    }
+                    elseif($line[1] == 'BY') {
+                        $thirdparty = getThirdpartyFromPAR($line, true);
+                        $commande->thirdparty = $thirdparty;
+                        var_dump($commande);
+                    }
+                }
+
+
+
+            }
+            exit;
+        }
+    }
+
+    public static function getThirdpartyFromPAR($line, $autoCreate = false)
+    {
+        global $db, $conf, $user;
+
+        $syslogContext = ' / launched by ' . __FILE__ . '  ' . __CLASS__ . '::' . __METHOD__;
+
+        //BY acheteur = commandé par
+        //SU fournisseur
+        //DP livré à
+        //OY donneur d'ordre
+        //UC destinataire final
+        //FG Acheteur officiel
+        //IC destinataire intermédiaire
+        //UD Dépot/Magasin/Consommateur Final
+        //SF Enlèvement
+        //IV Facturer à
+        //CN consignataire
+        //ST expédier à
+        //FW transporteur
+
+        $thirdparty = new Societe($db);
+        $fetched = 0;
+
+        // Fetch from EAN
+        $sql = "SELECT rowid FROM ".MAIN_DB_PREFIX."societe WHERE barcode = '".$db->escape(trim($line[2]))."'";
+        $resql=$db->query($sql);
+        if ($resql) {
+            $num = $db->num_rows($resql);
+            if ($num) {
+                $obj = $db->fetch_object($resql);
+                $fetchRes = $thirdparty->fetch($obj->rowid);
+                if($fetchRes>0){
+                    $fetched = 1;
+                    return $thirdparty;
+                }
+                else{
+                    $fetched = -1;
+                    dol_syslog('Fetch third party from EAN Error : '.$obj->rowid.$syslogContext,LOG_WARNING);
+                }
             }
         }
+        else{
+            $fetched = -1;
+            dol_syslog('Fetch thirdparty from EAN Sql Error : '.$sql.$syslogContext, LOG_WARNING);
+        }
+
+        // Fetch from Customer/Supplier code
+        if($line[3] == 'SU')
+        {
+            $sql = "SELECT rowid FROM ".MAIN_DB_PREFIX."societe WHERE code_fournisseur = '".$db->escape(trim($line[11]))."'";
+        }
+        else{
+            $sql = "SELECT rowid FROM ".MAIN_DB_PREFIX."societe WHERE code_client = '".$db->escape(trim($line[3]))."'";
+        }
+
+        $resql=$db->query($sql);
+        if ($resql) {
+            $num = $db->num_rows($resql);
+            if ($num) {
+                $obj = $db->fetch_object($resql);
+                $fetchRes = $thirdparty->fetch($obj->rowid);
+                if($fetchRes>0){
+                    $fetched = 1;
+                    return $thirdparty;
+                }
+                else{
+                    $fetched = -1;
+                    dol_syslog('Fetch thirdparty from thirdparty code Error : '.$obj->rowid.$syslogContext,LOG_WARNING);
+                }
+            }
+        }
+        else{
+            $fetched = -1;
+            dol_syslog('Fetch thirdparty from thirdparty code Sql Error : '.$sql.$syslogContext, LOG_WARNING);
+        }
+
+        // Fetch from NAME
+        if($fetched === 0){
+
+            $sql = " SELECT rowid FROM ".MAIN_DB_PREFIX."societe ";
+            $sql.= " WHERE (nom = '".$db->escape(trim($line[4]))."' OR name_alias = '".$db->escape(trim($line[4]))."' )";
+            $sql.= " AND zip = '".$db->escape(trim($line[8]))."' ";
+            $resql=$db->query($sql);
+            if ($resql) {
+                $num = $db->num_rows($resql);
+                if ($num) {
+                    $obj = $db->fetch_object($resql);
+                    $fetchRes = $thirdparty->fetch($obj->rowid);
+                    if($fetchRes>0){
+                        $fetched = 1;
+                        return $thirdparty;
+                    }
+                    else{
+                        $fetched = -1;
+                        dol_syslog('Fetch thirdparty from NAME Error : '.$obj->rowid.$syslogContext,LOG_WARNING);
+                    }
+                }
+            }
+            else{
+                $fetched = -1;
+                dol_syslog('Fetch thirdparty from NAME Sql Error : '.$sql.$syslogContext, LOG_WARNING);
+            }
+        }
+
+
+        if($fetched === 0){
+
+            $thirdparty->name               = trim($line[4]);
+            $thirdparty->barcode            = trim($line[2]);
+            $thirdparty->zip                = trim($line[8]);
+            $thirdparty->address            = trim($line[5]);
+            $thirdparty->town               = trim($line[9]);
+
+
+
+            $country = getCountry($line[9],'all');
+            if(!is_array($country)){
+                $fetched = -1;
+                dol_syslog('Fetch country id '.$line[9].$syslogContext, LOG_WARNING);
+            }
+            else{
+                $thirdparty->country_id = $country['id'];
+            }
+
+
+
+            // Load object modCodeTiers
+            $module=(! empty($conf->global->SOCIETE_CODECLIENT_ADDON)?$conf->global->SOCIETE_CODECLIENT_ADDON:'mod_codeclient_leopard');
+            if (substr($module, 0, 15) == 'mod_codeclient_' && substr($module, -3) == 'php')
+            {
+                $module = substr($module, 0, dol_strlen($module)-4);
+            }
+            $dirsociete=array_merge(array('/core/modules/societe/'),$conf->modules_parts['societe']);
+            foreach ($dirsociete as $dirroot)
+            {
+                $res=dol_include_once($dirroot.$module.'.php');
+                if ($res) break;
+            }
+            $modCodeClient = new $module;
+
+
+
+            // Load object modCodeFournisseur
+            $module=(! empty($conf->global->SOCIETE_CODECLIENT_ADDON)?$conf->global->SOCIETE_CODECLIENT_ADDON:'mod_codeclient_leopard');
+            if (substr($module, 0, 15) == 'mod_codeclient_' && substr($module, -3) == 'php')
+            {
+                $module = substr($module, 0, dol_strlen($module)-4);
+            }
+            $dirsociete=array_merge(array('/core/modules/societe/'),$conf->modules_parts['societe']);
+            foreach ($dirsociete as $dirroot)
+            {
+                $res=dol_include_once($dirroot.$module.'.php');
+                if ($res) break;
+            }
+            $modCodeFournisseur = new $module;
+
+
+            // Affectation des codes clients / fournisseurs
+            $thirdparty->code_fournisseur = trim($line[11]);
+            $thirdparty->code_client = trim($line[3]);
+
+            if(empty($thirdparty->code_fournisseur))
+            {
+                $thirdparty->code_fournisseur = $modCodeClient->getNextValue($thirdparty,0);
+            }
+
+            if(empty($thirdparty->code_client))
+            {
+                $thirdparty->code_client = $modCodeFournisseur->getNextValue($thirdparty,0);
+            }
+
+
+            $res = $thirdparty->create($user);
+            if($res > 0)
+            {
+                return $thirdparty;
+            }
+            else{
+                return -1;
+            }
+        }
+    }
+
+
+
+
+    public static function dumpLineDataLibelle($line)
+    {
+        $line[0] = str_replace("@GP", "ATGP", "$line[0]");
+
+        $lineDesc = array();
+
+        // print definition of col
+        $classname = 'EDIFormatOrdersSegment'.$line[0];
+        if(class_exists($classname))
+        {
+
+            $lineDesc[0] = $line[0];
+
+            foreach ($line as $index => $data) {
+                if(isset($classname::$TFields[$index]))
+                {
+                    $lineDesc[$index] = array(
+                        'index' => $index,
+                        'label' => $classname::$TFields[$index+1]['label'],
+                        'data' => $data
+                    );
+                }
+            }
+        }
+
+        var_dump($lineDesc);
     }
 }
 
