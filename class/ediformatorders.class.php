@@ -501,7 +501,7 @@ class EDIFormatOrders extends EDIFormat
                         }
                         elseif($line[1] == 'BY') {
                             // Customer
-                            $thirdparty = self::getThirdpartyFromPAR($line, true);
+                            $thirdparty = self::getThirdpartyFromPAR($line, true,$this->output);
                             $commande->thirdparty = $thirdparty;
                             $commande->socid = $thirdparty->id;
 
@@ -510,7 +510,7 @@ class EDIFormatOrders extends EDIFormat
                         }
                         elseif($line[1] == 'DP') {
                             // delivery to
-                            $thirdpartyExp = self::getThirdpartyFromPAR($line, true);
+                            $thirdpartyExp = self::getThirdpartyFromPAR($line, true, $this->output);
                         }
                     }
 
@@ -634,7 +634,7 @@ class EDIFormatOrders extends EDIFormat
     }
 
 
-    public static function getThirdpartyFromPAR($line, $autoCreate = false)
+    public static function getThirdpartyFromPAR($line, $autoCreate = false, &$output = '')
     {
         global $db, $conf, $user;
 
@@ -674,7 +674,7 @@ class EDIFormatOrders extends EDIFormat
                 else{
                     $fetched = -1;
 
-                    $this->output.= 'Fetch third party from EAN Error : '.$obj->rowid."\n";
+					$output.= 'Fetch third party from EAN Error : '.$obj->rowid."\n";
                     dol_syslog('Fetch third party from EAN Error : '.$obj->rowid.$syslogContext,LOG_WARNING);
                 }
             }
@@ -705,14 +705,14 @@ class EDIFormatOrders extends EDIFormat
                 }
                 else{
                     $fetched = -1;
-                    $this->output.= 'Fetch thirdparty from thirdparty code Error : '.$obj->rowid."\n";
+					$output.= 'Fetch thirdparty from thirdparty code Error : '.$obj->rowid."\n";
                     dol_syslog('Fetch thirdparty from thirdparty code Error : '.$obj->rowid.$syslogContext,LOG_WARNING);
                 }
             }
         }
         else{
             $fetched = -1;
-            $this->output.= 'Fetch thirdparty from thirdparty code Sql Error : '.$sql."\n";
+			$output.= 'Fetch thirdparty from thirdparty code Sql Error : '.$sql."\n";
             dol_syslog('Fetch thirdparty from thirdparty code Sql Error : '.$sql.$syslogContext, LOG_WARNING);
         }
 
@@ -734,14 +734,14 @@ class EDIFormatOrders extends EDIFormat
                     }
                     else{
                         $fetched = -1;
-                        $this->output.= 'Fetch thirdparty from NAME Error : '.$obj->rowid."\n";
+                        $output.= 'Fetch thirdparty from NAME Error : '.$obj->rowid."\n";
                         dol_syslog('Fetch thirdparty from NAME Error : '.$obj->rowid.$syslogContext,LOG_WARNING);
                     }
                 }
             }
             else{
                 $fetched = -1;
-                $this->output.= 'Fetch thirdparty from NAME Sql Error : '.$sql."\n";
+                $output.= 'Fetch thirdparty from NAME Sql Error : '.$sql."\n";
                 dol_syslog('Fetch thirdparty from NAME Sql Error : '.$sql.$syslogContext, LOG_WARNING);
             }
         }
