@@ -24,13 +24,17 @@ ATGPCONNECTOR_FORMAT_FAC_CHORUS_PATH=Format factures FAC@EDI Chorus : emplacemen
 ATGPCONNECTOR_FORMAT_PARTIN_CHORUS=Format tiers PARTIN@EDI Chorus
 ATGPCONNECTOR_FORMAT_PARTIN_CHORUS_PATH=Format tiers PARTIN@EDI Chorus : emplacement du dossier distant
 ATGPCONNECTOR_FORMAT_FAC_CHORUS_CATEGORY=Chorus : catégorie de clients/prospects impactés
-
-
+ATGPCONNECTOR_FORMAT_ORDER_PATH = Format Commande ORD@EDI : emplacement du dossier distant
+ATGPCONNECTOR_FORMAT_ORDER_DEST_EMAILEVENT=Adresse email destinatrice du resultat de l'import
+ATGPCONNECTOR_FORMAT_ORDER_FROM_EMAILEVENT=Adresse email emetrice du resultat de l'import
+ATGPCONNECTOR_FORMAT_ORDER_CREATE_FREE_LINE_IF_PRD_NOTFOUND = Creer les lignes de la commande en ligne libre si le produit (code barre) n'est pas trouvé (sinon commande entièrement rejetée)
 
 ATGPC_SendToChorus=Déposer sur Chorus
 ATGPC_ATGPStatus=Statut @GP
 ATGPC_ATGPStatuses=Statuts @GP
 ATGPC_ChorusServiceCode=Code service
+ATGPC_OrderEmailSubject=Intégration Email ORD@EDI
+ATGPC_GLN_ContactCode=Code GLN contact (ORD@EDI) (contact liv/fact/...)
 
 #Errors
 ATGPC_FACUploadSuccess=Envoi de la facture %s effectué avec succès
