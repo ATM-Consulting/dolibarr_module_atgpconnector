@@ -125,7 +125,6 @@ dol_include_once('/atgpconnector/class/ediformatpartinchorus.class.php');
 
 setup_print_input_form_part('ATGPCONNECTOR_FORMAT_PARTIN_CHORUS_PATH', false, '', array('placeholder' => EDIFormatPARTINChorus::$remotePath));
 
-
 $var=!$var;
 
 print '<tr '.$bc[$var].'>';
@@ -150,6 +149,15 @@ print '<input type="hidden" name="action" value="set_ATGPCONNECTOR_FORMAT_FAC_CH
 print $form->select_all_categories('customer', $conf->global->ATGPCONNECTOR_FORMAT_FAC_CHORUS_CATEGORY, 'ATGPCONNECTOR_FORMAT_FAC_CHORUS_CATEGORY');
 print '<input type="submit" class="butAction" value="'.$langs->trans("Modify").'">';
 print '</form>';
+
+
+dol_include_once('/atgpconnector/class/ediformatorders.class.php');
+
+setup_print_input_form_part('ATGPCONNECTOR_FORMAT_ORDER_PATH', false, '', array('placeholder' => EDIFormatOrders::$remotePath));
+setup_print_input_form_part('ATGPCONNECTOR_FORMAT_ORDER_DEST_EMAILEVENT', false);
+setup_print_input_form_part('ATGPCONNECTOR_FORMAT_ORDER_FROM_EMAILEVENT', false);
+setup_print_on_off('ATGPCONNECTOR_FORMAT_ORDER_CREATE_FREE_LINE_IF_PRD_NOTFOUND');
+
 print '</td></tr>';
 
 print '</table>';
