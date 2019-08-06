@@ -704,7 +704,7 @@ class EDIFormatOrders extends EDIFormat
 					$contact->address = self::cleanAddress($line);
 					$contact->zip = trim($line[8]);
 					$contact->town = trim($line[9]);
-					$result = $contact->update($user);
+					$result = $contact->update($contact->id,$user);
 					if ($result < 0) {
 						$output .= 'ERROR Update contact from GLN_code : ' . $contact->error . "\n";
 						dol_syslog('Fetch Contact from EAN Error : ' . $contact->error . $syslogContext, LOG_WARNING);
