@@ -97,7 +97,7 @@ class modatgpconnector extends DolibarrModules
 
 		// Data directories to create when module is enabled.
 		// Example: this->dirs = array("/atgpconnector/temp");
-		$this->dirs = array('/atgpconnector/temp', '/atgpconnector/temp/status', '/atgpconnector/temp/partinchorus');
+		$this->dirs = array('/atgpconnector/temp', '/atgpconnector/temp/status', '/atgpconnector/temp/partinchorus', '/atgpconnector/temp/order');
 
 		// Config pages. Put here list of php page, stored into atgpconnector/admin directory, to use to setup module.
 		$this->config_page_url = array("atgpconnector_setup.php@atgpconnector");
@@ -367,17 +367,17 @@ class modatgpconnector extends DolibarrModules
 		);
 
 		$this->_cronjobs[] = array(
-		    'label' => '@GP - Création de commandes',
-            'jobtype' => 'method',
-            'classesname' => '/atgpconnector/class/ediformatorders.class.php',
-            'objectname' => 'EDIFormatOrders',
-            'methodename' => 'cronCreateOrders',
-            'parameters' => '',
-            'frequency' => 1,
-            'unitfrequency' => 86400,
-            'datestart' => dol_mktime(1, 0, 0, dol_print_date(dol_now('tzserver'), '%m'), dol_print_date(dol_now('tzserver'), '%d'), dol_print_date(dol_now('tzserver'), '%Y')),
-            'datenextrun' => dol_mktime(1, 0, 0, dol_print_date(dol_now('tzserver'), '%m'), dol_print_date(dol_now('tzserver'), '%d'), dol_print_date(dol_now('tzserver'), '%Y')),
-            'comment' => ''
+			'label' => '@GP - Création de commandes',
+			'jobtype' => 'method',
+			'classesname' => '/atgpconnector/class/ediformatorders.class.php',
+			'objectname' => 'EDIFormatOrders',
+			'methodename'   => 'cronCreateOrders',
+			'parameters'    => '',
+			'frequency'     => 1,
+			'unitfrequency' => 86400,
+			'datestart'     => dol_mktime(1, 0, 0, dol_print_date(dol_now('tzserver'), '%m'), dol_print_date(dol_now('tzserver'), '%d'), dol_print_date(dol_now('tzserver'), '%Y')),
+			'datenextrun'   => dol_mktime(1, 0, 0, dol_print_date(dol_now('tzserver'), '%m'), dol_print_date(dol_now('tzserver'), '%d'), dol_print_date(dol_now('tzserver'), '%Y')),
+			'comment'       => '@GP - Création de commandes'
         );
 	}
 
@@ -440,7 +440,8 @@ class modatgpconnector extends DolibarrModules
 		$ret = $extrafields->addExtraField('active', 'ATGPC_ChorusCompanyActive', 'select', 110, '', 'societe', 0, 0, '', $yesNoParams, 1, '', -1, 0, '', '', 'atgpconnector@atgpconnector');
 
 		// Contacts/Addresses
-		$ret = $extrafields->addExtraField('service_code', 'ATGPC_ChorusServiceCode', 'varchar', 1, 64, 'socpeople', 0, 0, '', array(), 1, '', 1, 0, '', '', 'atgpconnector@atgpconnector');
+		$ret = $extrafields->addExtraField('service_code', 'ATGPC_ChorusServiceCode', 'varchar', 1, 64, 'socpeople', 0, 0, '', '', 1, '', 1, 0, '', '', 'atgpconnector@atgpconnector');
+		$ret = $extrafields->addExtraField('GLN_code', 'ATGPC_GLN_ContactCode', 'varchar', 1, 64, 'socpeople', 0, 0, '', '', 1, '', 1, 0, '', '', 'atgpconnector@atgpconnector');
 
 		// Invoices
 		$ret = $extrafields->addExtraField('atgp_status', 'ATGPC_ATGPStatus', 'sellist', 1, '', 'facture', 0, 0, '', array('options' => array('c_atgpconnector_status:label:rowid::active=1' => null)), 0, '', -1, 0, '', '', 'atgpconnector@atgpconnector');
