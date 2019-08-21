@@ -171,7 +171,7 @@ class EDIFormatOrders extends EDIFormat
 				$mimetype_list[] = dol_mimetype($filepath);
 			}
 
-			if ($nbCreate >= 0 && count($TFile>=1) {
+			if ($nbCreate >= 0 && count($TFile>=1)) {
 				$this->output .= 'Create ' . $nbCreate . ' orders' . "\n";
 				if (!empty($conf->global->ATGPCONNECTOR_FORMAT_ORDER_DEST_EMAILEVENT)) {
 
