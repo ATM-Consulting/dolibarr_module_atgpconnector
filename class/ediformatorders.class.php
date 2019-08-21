@@ -171,7 +171,7 @@ class EDIFormatOrders extends EDIFormat
 				$mimetype_list[] = dol_mimetype($filepath);
 			}
 
-			if ($result > 0) {
+			if ($nbCreate >= 0 && count($TFile>=1) {
 				$this->output .= 'Create ' . $nbCreate . ' orders' . "\n";
 				if (!empty($conf->global->ATGPCONNECTOR_FORMAT_ORDER_DEST_EMAILEVENT)) {
 
@@ -237,6 +237,10 @@ class EDIFormatOrders extends EDIFormat
 			$localFiles = array();
 
 			$files = ftp_nlist($ftpHandle, '.');
+			if ($files===false) {
+				$this->output .= $langs->trans('ATGPC_CannotListFilesOnFTP') . "\n";
+			}
+
 			if (!empty($files)) {
 				foreach ($files as $fname) {
 					if ($fname == '.' || $fname == '..')
