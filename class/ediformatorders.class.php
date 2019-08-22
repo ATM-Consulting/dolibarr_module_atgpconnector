@@ -171,7 +171,7 @@ class EDIFormatOrders extends EDIFormat
 				$mimetype_list[] = dol_mimetype($filepath);
 			}
 
-			if ($nbCreate >= 0 && count($TFile>=1)) {
+			if ($nbCreate >= 0 && is_array($TFile) && count($TFile)>=1) {
 				$this->output .= 'Create ' . $nbCreate . ' orders' . "\n";
 				if (!empty($conf->global->ATGPCONNECTOR_FORMAT_ORDER_DEST_EMAILEVENT)) {
 
@@ -337,11 +337,17 @@ class EDIFormatOrders extends EDIFormat
 
 						// Date du document
 						$date = DateTime::createFromFormat('d/m/Y', $line[3]);
-						$commande->date = $date->getTimestamp();
+						if ($date!==false) {
+							$commande->date = $date->getTimestamp();
+						} else {
+							$commande->date = dol_now();
+						}
 
 						// Date livraison
 						$date = DateTime::createFromFormat('d/m/Y H:i', $line[6] . ' ' . $line[7]);
-						$commande->date_livraison = $date->getTimestamp();
+						if ($date!==false) {
+							$commande->date_livraison = $date->getTimestamp();
+						}
 					}
 
 					// TIERS
@@ -351,20 +357,22 @@ class EDIFormatOrders extends EDIFormat
 						} elseif ($line[1] == 'BY') {
 							// Customer
 							$thirdparty = self::getThirdpartyFromPAR($line, true, $this->output);
-							$commande->thirdparty = $thirdparty;
-							$commande->socid = $thirdparty->id;
-							$commande->cond_reglement_id = $thirdparty->cond_reglement_id;
-							$commande->mode_reglement_id = $thirdparty->mode_reglement_id;
+							if (!empty($thirdparty->id)) {
+								$commande->thirdparty = $thirdparty;
+								$commande->socid = $thirdparty->id;
+								$commande->cond_reglement_id = $thirdparty->cond_reglement_id;
+								$commande->mode_reglement_id = $thirdparty->mode_reglement_id;
+							}
 						} elseif ($line[1] == 'DP') {
 							// delivery to
 							$ContactExp = self::getContactFromPAR($line, true, $this->output);
-							if ($ContactExp == -1) {
+							if ($ContactExp < 0) {
 								$error++;
 							}
 						} elseif ($line[1] == 'IV') {
 							// invoice to
 							$ContactInv = self::getContactFromPAR($line, true, $this->output);
-							if ($ContactExp == -1) {
+							if ($ContactExp < 0) {
 								$error++;
 							}
 						}
@@ -409,7 +417,7 @@ class EDIFormatOrders extends EDIFormat
 							$pu_ht = $line[8];
 							$qty = $line[6];
 
-							$txtva = 0; // apparement la TVA n'est pas envoyée. ça va être pratique pour la suite
+							$txtva = 0;
 							$txlocaltax1 = 0;
 							$txlocaltax2 = 0;
 							$fk_product = 0;
@@ -438,6 +446,15 @@ class EDIFormatOrders extends EDIFormat
 								$desc = '';
 								$fk_product = $product->id;
 								$type = $product->type;
+								//find TVA from product price
+								$txtva = (!empty($product->tva_tx)?$product->tva_tx:0);
+								//Find cost price
+								if (! empty($conf->margin->enabled)) {
+									$TResult = $this->getCostPrice($product->id);
+									if (is_array($TResult) && count($TResult)>0) {
+										$pa_ht =$TResult[0]['price'];
+									}
+								}
 							}
 							if ($productFetched || $conf->global->ATGPCONNECTOR_FORMAT_ORDER_CREATE_FREE_LINE_IF_PRD_NOTFOUND) {
 								$res = $commande->addline($desc, $pu_ht, $qty, $txtva, $txlocaltax1, $txlocaltax2, $fk_product, $remise_percent, $info_bits, $fk_remise_except, $price_base_type, $pu_ttc, $date_start, $date_end, $type, $rang, $special_code, $fk_parent_line, $fk_fournprice, $pa_ht, $label, $array_options, $fk_unit, $origin, $origin_id, $pu_ht_devise);
@@ -473,6 +490,60 @@ class EDIFormatOrders extends EDIFormat
 				return $error * -1;
 			}
 		}
+	}
+
+	/**
+	 * @param int $idprod prod id
+	 * @return array
+	 */
+	private function getCostPrice($idprod=0)
+	{
+
+		global $db, $conf;
+
+		require_once DOL_DOCUMENT_ROOT.'/fourn/class/fournisseur.product.class.php';
+		$producttmp=new ProductFournisseur($db);
+		$producttmp->fetch($idprod);
+
+		$sorttouse = 'pfp.unitprice, s.nom, pfp.quantity, pfp.price';
+
+		$prices=array();
+		if (isset($conf->global->MARGIN_TYPE))
+		{
+			if ($conf->global->MARGIN_TYPE == '1')   {
+				// We list all price per supplier, and then firstly with the lower quantity. So we can choose first one with enough quantity into list.
+				$productSupplierArray = $producttmp->list_product_fournisseur_price($idprod, $sorttouse);
+				if ( is_array($productSupplierArray))
+				{
+					foreach ($productSupplierArray as $productSupplier)
+					{
+						$price = $productSupplier->fourn_price * (1 - $productSupplier->fourn_remise_percent / 100);
+						$unitprice = $productSupplier->fourn_unitprice * (1 - $productSupplier->fourn_remise_percent / 100);
+
+						if ($productSupplier->fourn_qty > 1)
+						{
+							$price = $unitprice;
+						}
+						$prices[] = array("id" => $productSupplier->product_fourn_price_id, "price" => price2num($price,0,'',0));
+						break;
+					}
+				}
+			}
+			elseif ($conf->global->MARGIN_TYPE == 'pmp' && !empty($conf->stock->enabled))  {
+					// Add price for pmp
+					$price=$producttmp->pmp;
+					// For price field, we must use price2num(), for label or title, price()
+					$prices[] = array("id" => 'pmpprice', "price" => price2num($price));
+			}
+			elseif ($conf->global->MARGIN_TYPE == 'costprice') {
+				// Add price for costprice
+				$price=$producttmp->cost_price;
+				// For price field, we must use price2num(), for label or title, price()
+				$prices[] = array("id" => 'costprice', "price" => price2num($price));
+			}
+		}
+
+		return $prices;
 	}
 
 	/**
@@ -644,7 +715,7 @@ class EDIFormatOrders extends EDIFormat
 			$modCodeClient = new $module;
 
 			// Affectation des codes clients
-			$thirdparty->code_client = trim($line[3]);
+			$thirdparty->name_alias = 'Created from ORD@EDI '. trim($line[3]);
 
 			if (empty($thirdparty->code_client)) {
 				$thirdparty->code_client = $modCodeClient->getNextValue($thirdparty, 0);
@@ -753,8 +824,6 @@ class EDIFormatOrders extends EDIFormat
 				}
 			}
 		}
-
-		exit;
 	}
 
 	/**
