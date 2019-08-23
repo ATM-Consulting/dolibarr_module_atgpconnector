@@ -414,7 +414,7 @@ class EDIFormatOrders extends EDIFormat
 							}
 
 							$desc = $line[9];
-							$pu_ht = $line[8];
+							$pu_ht = price2num($line[8]);
 							$qty = $line[6];
 
 							$txtva = 0;
@@ -453,6 +453,35 @@ class EDIFormatOrders extends EDIFormat
 									$TResult = $this->getCostPrice($product->id);
 									if (is_array($TResult) && count($TResult)>0) {
 										$pa_ht =$TResult[0]['price'];
+									}
+								}
+								//Find price if not provided by @GP
+
+								if (empty($pu_ht)) {
+									if (! empty($conf->global->PRODUIT_CUSTOMER_PRICES)) {
+										$sql = 'SELECT pcp.rowid as idprodcustprice, pcp.price as custprice, pcp.price_ttc as custprice_ttc,';
+										$sql.=' pcp.price_base_type as custprice_base_type, pcp.tva_tx as custtva_tx ';
+										$sql.=' FROM ' . MAIN_DB_PREFIX . 'product_customer_price as pcp WHERE pcp.fk_soc='.$commande->socid;
+										$sql.=' AND pcp.fk_product=' . $product->id;
+										$resql=$db->query($sql);
+										if (!$resql) {
+											$this->output .= 'ERROR find customer price: product id ' . $product->id . ' Order soc id:'.$commande->socid. ' error :' . $db->lasterror . "\n";
+											dol_syslog('ERROR find customer price: product id ' . $product->id . ' Order soc id:'.$commande->socid. ' error :' . $db->lasterror .' ' . $syslogContext, LOG_ERR);
+											$error++;
+										} else {
+											$num=$db->num_rows($resql);
+											if ($num>1)
+											{
+												while($objprice=$db->fetch_object($resql))
+												{
+													$pu_ht=$objprice->custprice;
+													$txtva = $objprice->custtva_tx;
+												}
+											}
+										}
+									}
+									if (empty($pu_ht)) {
+										$pu_ht=$product->price;
 									}
 								}
 							}
