@@ -362,6 +362,9 @@ class EDIFormatOrders extends EDIFormat
 								$commande->socid = $thirdparty->id;
 								$commande->cond_reglement_id = $thirdparty->cond_reglement_id;
 								$commande->mode_reglement_id = $thirdparty->mode_reglement_id;
+							} else {
+								$commande = false;
+								$error++;
 							}
 						} elseif ($line[1] == 'DP') {
 							// delivery to
