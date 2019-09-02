@@ -356,15 +356,36 @@ class EDIFormatOrders extends EDIFormat
 							//Always dolibarr company owner
 						} elseif ($line[1] == 'BY') {
 							// Customer
-							$thirdparty = self::getThirdpartyFromPAR($line, true, $this->output);
+							//We try to find it on code bar customer (do not auto create)
+							$thirdparty = self::getThirdpartyFromPAR($line, false, $this->output);
 							if (!empty($thirdparty->id)) {
 								$commande->thirdparty = $thirdparty;
 								$commande->socid = $thirdparty->id;
 								$commande->cond_reglement_id = $thirdparty->cond_reglement_id;
 								$commande->mode_reglement_id = $thirdparty->mode_reglement_id;
 							} else {
-								$commande = false;
-								$error++;
+								//If we do not find in thridparty with try with contact on GLN code
+								$ContactBuy = self::getContactFromPAR($line, false, $this->output);
+								if ($ContactBuy < 0) {
+									$error++;
+									$commande = false;
+								} elseif (!empty($ContactBuy->id)) {
+									$ContactBuy->fetch_thirdparty();
+									$commande->thirdparty = $ContactBuy->thirdparty->id;
+									$commande->socid =$ContactBuy->thirdparty->id;
+									$commande->cond_reglement_id = $ContactBuy->thirdparty->cond_reglement_id;
+									$commande->mode_reglement_id = $ContactBuy->thirdparty->mode_reglement_id;
+								} else {
+									//Finally we create the thirdparty
+									$thirdparty = self::getThirdpartyFromPAR($line, true, $this->output);
+									if (!empty($thirdparty->id)) {
+										$commande->thirdparty = $thirdparty;
+										$commande->socid = $thirdparty->id;
+										$commande->cond_reglement_id = $thirdparty->cond_reglement_id;
+										$commande->mode_reglement_id = $thirdparty->mode_reglement_id;
+									}
+								}
+
 							}
 						} elseif ($line[1] == 'DP') {
 							// delivery to
@@ -837,7 +858,7 @@ class EDIFormatOrders extends EDIFormat
 		if ($fetched === 0 && $autoCreate) {
 
 			//find if thirdparty Exists (if not create it)
-			$thirdparty = self::getThirdpartyFromPAR($line, true, $output);
+			$thirdparty = self::getThirdpartyFromPAR($line, $autoCreate, $output);
 
 			if (!empty($thirdparty->id)) {
 				$contact->socid = $thirdparty->id;
