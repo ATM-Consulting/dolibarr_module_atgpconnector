@@ -113,6 +113,10 @@ setup_print_title('ATGPC_ActivatedModes');
 
 setup_print_on_off('ATGPCONNECTOR_DEV_MODE');
 setup_print_on_off('ATGPCONNECTOR_FORMAT_FAC');
+
+dol_include_once('/atgpconnector/class/ediformatfac.class.php');
+
+setup_print_input_form_part('ATGPCONNECTOR_FORMAT_FAC_PATH', false, '', array('placeholder' => EDIFormatFAC::$remotePath));
 setup_print_on_off('ATGPCONNECTOR_FORMAT_FAC_CHORUS');
 
 dol_include_once('/atgpconnector/class/ediformatfacchorus.class.php');

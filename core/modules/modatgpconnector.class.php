@@ -118,6 +118,7 @@ class modatgpconnector extends DolibarrModules
 		// );
 		$this->const = array();
 		$this->const[] = array('MAIN_AGENDA_ACTIONAUTO_INVOICE_SENT_TO_CHORUS', 'chaine', 1, 'Activate automatic event when an invoice is sent to Chorus', 1, 'current', 0);
+		$this->const[] = array('MAIN_AGENDA_ACTIONAUTO_INVOICE_SENT_TO_ATGP', 'chaine', 1, 'Activate automatic event when an invoice is sent to @GP', 1, 'current', 0);
 
 		// Array to add new pages in new tabs
 		// Example: $this->tabs = array('objecttype:+tabname1:Title1:atgpconnector@atgpconnector:$user->rights->atgpconnector->read:/atgpconnector/mynewtab1.php?id=__ID__',  	// To add a new tab identified by code tabname1

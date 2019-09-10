@@ -19,6 +19,7 @@ ATGPCONNECTOR_FTP_PASSIVE_MODE=Activer le mode passif
 ATGPC_ActivatedModes=Formats EDI
 ATGPCONNECTOR_DEV_MODE=Mode de tests
 ATGPCONNECTOR_FORMAT_FAC=Format factures FAC@EDI
+ATGPCONNECTOR_FORMAT_FAC_PATH=Format factures FAC@EDI : emplacement du dossier distant
 ATGPCONNECTOR_FORMAT_FAC_CHORUS=Format factures FAC@EDI Chorus
 ATGPCONNECTOR_FORMAT_FAC_CHORUS_PATH=Format factures FAC@EDI Chorus : emplacement du dossier distant
 ATGPCONNECTOR_FORMAT_PARTIN_CHORUS=Format tiers PARTIN@EDI Chorus
@@ -29,6 +30,7 @@ ATGPCONNECTOR_FORMAT_ORDER_DEST_EMAILEVENT=Adresse email destinatrice du resulta
 ATGPCONNECTOR_FORMAT_ORDER_FROM_EMAILEVENT=Adresse email emetrice du resultat de l'import
 ATGPCONNECTOR_FORMAT_ORDER_CREATE_FREE_LINE_IF_PRD_NOTFOUND = Creer les lignes de la commande en ligne libre si le produit (code barre) n'est pas trouvé (sinon commande entièrement rejetée)
 
+ATGPC_SendViaAtGP=Déposer via @GP
 ATGPC_SendToChorus=Déposer sur Chorus
 ATGPC_ATGPStatus=Statut @GP
 ATGPC_ATGPStatuses=Statuts @GP
@@ -37,20 +39,22 @@ ATGPC_OrderEmailSubject=Intégration Email ORD@EDI
 ATGPC_GLN_ContactCode=Code GLN contact (ORD@EDI) (contact liv/fact/...)
 
 #Errors
-ATGPC_FACUploadSuccess=Envoi de la facture %s effectué avec succès
+ATGPC_FACUploadSuccess=Dépôt de la facture %s effectué avec succès
+ATGPC_InvoiceNotEligible=Facture %s non éligible au dépôt
 ATGPC_InvoiceNotChorusEligible=Facture %s non éligible au dépôt sur Chorus
-ATGPC_NInvoicesSuccesfullySent=%s facture(s) ont été déposée(s) sur Chorus avec succès
-ATGPC_ErrorForInvoice=Erreur à l'envoi de la facture %s
+ATGPC_NInvoicesSuccesfullySent=%s facture(s) ont été déposée(s) avec succès
+ATGPC_ErrorForInvoice=Erreur au dépôt de la facture %s
 ATGPC_CouldNotOpenTempCSVFile=Impossible d'ouvrir le fichier CSV temporaire '%s'
-ATGPC_CouldNotGenerateCSVFileSegmentDescriptorNotFound=Impossible de générer le fichier CSV temporaire '%s' : descripteur du segement %s introuvable
+ATGPC_CouldNotGenerateCSVFileSegmentDescriptorNotFound=Impossible de générer le fichier CSV temporaire '%s' : descripteur du segment %s introuvable
 ATGPC_CouldNotOpenFTPConnection=Impossible d'ouvrir la connexion FTP
 ATGPC_FTPAuthentificationFailed=Impossible d'authentifier la connexion FTP
 ATGPC_FTPFailedToUploadFile=Impossible de déposer le fichier local '%s' vers le chemin distant '%s'
 ATGPC_ErrorRequiredField=Erreur : facture %s, champ obligatoire non renseigné (%s)
-ATGPC_CannotListFilesOnFTP=Impossible de lister les fichiers essayer avec le mode PAssif dans la configuration du module
+ATGPC_CannotListFilesOnFTP=Impossible de lister les fichiers distants, veuillez essayer avec le mode passif dans la configuration du module
 
 #Events
-INVOICE_SENT_TO_CHORUSInDolibarr=Facture déposée sur Chorus
+INVOICE_SENT_TO_ATGPInDolibarr=Facture %s déposée sur @GP
+INVOICE_SENT_TO_CHORUSInDolibarr=Facture %s déposée sur Chorus
 
 
 # MENU

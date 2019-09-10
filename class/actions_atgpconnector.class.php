@@ -62,6 +62,25 @@ class Actionsatgpconnector
 	 */
 	function doActions($parameters, &$object, &$action, $hookmanager)
 	{
+		if ($this->_canHandleEDIFAC($parameters, $object, $action, $hookmanager) && $action === 'send-to-customer')
+		{
+			global $langs;
+
+			define('INC_FROM_DOLIBARR', true);
+			dol_include_once('/atgpconnector/config.php');
+			dol_include_once('/atgpconnector/class/ediformatfac.class.php');
+
+			$langs->load('atgpconnector@atgpconnector');
+			$documentSent = $this->_sendOneInvoice($object);
+
+			if($documentSent)
+			{
+				setEventMessage($langs->trans('ATGPC_FACUploadSuccess', $object->ref));
+			}
+
+			return $documentSent ? 0 : -1;
+		}
+
 		if ($this->_canHandleEDIFACChorus($parameters, $object, $action, $hookmanager) && $action === 'send-to-chorus')
 		{
 			global $langs;
@@ -98,6 +117,15 @@ class Actionsatgpconnector
 	{
 		global $langs;
 
+		if ($this->_canHandleEDIFAC($parameters, $object, $action, $hookmanager))
+		{
+			$langs->load('atgpconnector@atgpconnector');
+
+			$url = $_SERVER['PHP_SELF'] .'?id=' . $object->id . '&action=send-to-customer';
+
+			print '<div class="inline-block divButAction"><a class="butAction" href="'. $url .'">' . $langs->trans('ATGPC_SendViaAtGP') . '</a></div>';
+		}
+
 		if ($this->_canHandleEDIFACChorus($parameters, $object, $action, $hookmanager))
 		{
 			$langs->load('atgpconnector@atgpconnector');
@@ -124,6 +152,13 @@ class Actionsatgpconnector
 	{
 		global $langs;
 
+		if ($this->_canHandleEDIFAC($parameters, $object, $action, $hookmanager, 'invoicelist', true))
+		{
+			$langs->load('atgpconnector@atgpconnector');
+
+			$this->resprints = '<option value="send-to-customer">' . $langs->trans('ATGPC_SendViaAtGP') . '</option>';
+		}
+
 		if ($this->_canHandleEDIFACChorus($parameters, $object, $action, $hookmanager, 'invoicelist', true))
 		{
 			$langs->load('atgpconnector@atgpconnector');
@@ -148,9 +183,46 @@ class Actionsatgpconnector
 	{
 		$massaction = GETPOST('massaction','alpha');
 
+		if ($this->_canHandleEDIFAC($parameters, $object, $action, $hookmanager, 'invoicelist', true) && $massaction === 'send-to-customer')
+		{
+			global $langs;
+
+			$langs->load('atgpconnector@atgpconnector');
+
+			define('INC_FROM_DOLIBARR', true);
+			dol_include_once('/atgpconnector/config.php');
+			dol_include_once('/atgpconnector/class/ediformatfac.class.php');
+
+			$TIDInvoices = $parameters['toselect'];
+			$nbUploadsDone = 0;
+
+			foreach($TIDInvoices as $invoiceID)
+			{
+				$invoice = new Facture($object->db);
+				$invoice->fetch($invoiceID);
+
+				if($this->_canHandleEDIFAC($parameters, $invoice, $action, $hookmanager, 'invoicelist'))
+				{
+					if($this->_sendOneInvoice($invoice))
+					{
+						$nbUploadsDone++;
+					}
+				} else {
+					setEventMessage($langs->trans('ATGPC_InvoiceNotEligible', $invoice->ref), 'warnings');
+				}
+			}
+
+			if($nbUploadsDone > 0)
+			{
+				setEventMessage($langs->trans('ATGPC_NInvoicesSuccesfullySent', $nbUploadsDone));
+			}
+		}
+
 		if ($this->_canHandleEDIFACChorus($parameters, $object, $action, $hookmanager, 'invoicelist', true) && $massaction === 'send-to-chorus')
 		{
 			global $langs;
+
+			$langs->load('atgpconnector@atgpconnector');
 
 			define('INC_FROM_DOLIBARR', true);
 			dol_include_once('/atgpconnector/config.php');
@@ -198,6 +270,27 @@ class Actionsatgpconnector
 	}
 
 
+	function _canHandleEDIFAC($parameters, &$object, &$action, $hookmanager, $targetContext = 'invoicecard', $massAction = false)
+	{
+		global $conf, $db;
+
+		if(
+			! $this->_canHandleEDI($parameters, $object, $action, $hookmanager)
+			||	! in_array($targetContext, explode(':', $parameters['context']))
+			||	empty($conf->global->ATGPCONNECTOR_FORMAT_FAC)
+		)
+		{
+			return false;
+		}
+
+		return $massAction || (
+			$object->statut > Facture::STATUS_DRAFT
+			&&	empty($object->array_options['options_atgp_status'])
+			&&	! empty($object->thirdparty->idprof2)
+		);
+	}
+
+
 	function _canHandleEDIFACChorus($parameters, &$object, &$action, $hookmanager, $targetContext = 'invoicecard', $massAction = false)
 	{
 		global $conf, $db;
@@ -205,7 +298,6 @@ class Actionsatgpconnector
 		if(
 				! $this->_canHandleEDI($parameters, $object, $action, $hookmanager)
 			||	! in_array($targetContext, explode(':', $parameters['context']))
-			||	empty($conf->global->ATGPCONNECTOR_FORMAT_FAC)
 			||	empty($conf->global->ATGPCONNECTOR_FORMAT_FAC_CHORUS)
 		)
 		{
@@ -236,6 +328,47 @@ class Actionsatgpconnector
 			&&	! empty($object->thirdparty->idprof2)
 			&&	$category->containsObject('customer', $object->thirdparty->id) > 0
 		);
+	}
+
+
+	function _sendOneInvoice(Facture &$invoice)
+	{
+		global $conf, $langs;
+
+		$this->_loadAllInvoiceData($invoice);
+
+		if(! empty($conf->global->ATGPCONNECTOR_FORMAT_FAC_PATH))
+		{
+			EDIFormatFAC::$remotePath = $conf->global->ATGPCONNECTOR_FORMAT_FAC_PATH;
+		}
+
+		$formatFAC = new EDIFormatFAC($invoice);
+
+		if (! empty($formatFAC->TErrors))
+		{
+			setEventMessage($formatFAC->TErrors, 'errors');
+			return false;
+		}
+
+		$documentUploaded = $formatFAC->put();
+
+		if($documentUploaded)
+		{
+			if(empty($conf->global->ATGPCONNECTOR_FTP_DISABLE_ALL_TRANSFERS))
+			{
+				$this->_insertAutomaticActionComm($invoice, 'INVOICE_SENT_TO_ATGP');
+				$invoice->array_options['options_atgp_status'] = 201; // Déposée
+				// $invoice->insertExtraFields();
+			}
+		}
+		else
+		{
+			setEventMessages($langs->trans('ATGPC_ErrorForInvoice', $invoice->ref), $formatFAC->TErrors, 'errors');
+		}
+
+		// TODO envois groupés
+
+		return $documentUploaded;
 	}
 
 
