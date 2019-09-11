@@ -359,7 +359,7 @@ class Actionsatgpconnector
 			{
 				$this->_insertAutomaticActionComm($invoice, 'INVOICE_SENT_TO_ATGP');
 				$invoice->array_options['options_atgp_status'] = 201; // Déposée
-				// $invoice->insertExtraFields();
+				$invoice->insertExtraFields();
 			}
 		}
 		else
