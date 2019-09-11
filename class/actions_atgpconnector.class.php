@@ -299,6 +299,7 @@ class Actionsatgpconnector
 				! $this->_canHandleEDI($parameters, $object, $action, $hookmanager)
 			||	! in_array($targetContext, explode(':', $parameters['context']))
 			||	empty($conf->global->ATGPCONNECTOR_FORMAT_FAC_CHORUS)
+			||  empty($conf->global->ATGPCONNECTOR_MYSOC_GLN_CODE)
 		)
 		{
 			return false;

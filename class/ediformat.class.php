@@ -142,7 +142,8 @@ abstract class EDIFormat
 
 	public final function putLID($csvHandle, $TSegmentDescriptor, $segmentObj)
 	{
-		$segmentInstance = new EDIFormatFACChorusSegmentLID;
+		$lidClassName = get_class($this) . 'SegmentLID';
+		$segmentInstance = new $lidClassName();
 
 		if(! empty($TSegmentDescriptor['multiple']))
 		{
@@ -161,7 +162,8 @@ abstract class EDIFormat
 
 	public final function putFTX($csvHandle, $TSegmentDescriptor, $segmentObj)
     {
-        $segmentInstance = new EDIFormatFACChorusSegmentFTX;
+	    $ftxClassName = get_class($this) . 'SegmentFTX';
+        $segmentInstance = new $ftxClassName();
 
         if(! empty($TSegmentDescriptor['multiple']))
         {

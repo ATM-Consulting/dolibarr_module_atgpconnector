@@ -75,6 +75,12 @@ class EDIFormatFAC extends EDIFormat
 		$this->parseServiceCode();
 
 
+		// Code GLN
+
+		$mysoc->_glnCode = $conf->global->ATGPCONNECTOR_MYSOC_GLN_CODE;
+		$this->parseGLNCode();
+
+
 		// RIB
 
 		dol_include_once('/compta/bank/class/account.class.php');
@@ -117,24 +123,9 @@ class EDIFormatFAC extends EDIFormat
 
 
 		// Check required fields
-		if (!empty($this->object->thirdparty->array_options['options_code_service']) && $this->object->thirdparty->array_options['options_code_service'] === '2') {
-			if (empty($this->object->thirdparty->_chorusServiceCode) || ctype_space($this->object->thirdparty->_chorusServiceCode)) {
-				$this->appendError('ATGPC_ErrorRequiredField', $this->object->ref, 'Code service');
-			}
-		}
-		if (!empty($this->object->thirdparty->array_options['options_n_eng']) && $this->object->thirdparty->array_options['options_n_eng'] === '2') {
-			if (empty($this->object->origin_object->ref_client) || ctype_space($this->object->origin_object->ref_client)) {
-				$this->appendError('ATGPC_ErrorRequiredField', $this->object->ref, 'Numéro d\'engagement ');
-			}
-		}
-		if (!empty($this->object->thirdparty->array_options['options_cs_engage']) && $this->object->thirdparty->array_options['options_cs_engage'] === '2') {
-
-			if (
-				(empty($this->object->thirdparty->_chorusServiceCode) || ctype_space($this->object->thirdparty->_chorusServiceCode))
-				&& (empty($this->object->origin_object->ref_client) || ctype_space($this->object->origin_object->ref_client))
-			) {
-				$this->appendError('ATGPC_ErrorRequiredField', $this->object->ref, 'Code service ou Numéro d\'engagement');
-			}
+		if (empty($this->object->thirdparty->_glnCode) || ctype_space($this->object->thirdparty->_glnCode))
+		{
+			$this->appendError('ATGPC_ErrorRequiredField', $this->object->ref, 'Code GLN');
 		}
 
 		// TVA
@@ -264,6 +255,25 @@ class EDIFormatFAC extends EDIFormat
 		foreach ($this->object->_TContacts as $contactDescriptor) {
 			if ($contactDescriptor['code'] == 'CHORUS_SERVICE') {
 				$this->object->thirdparty->_chorusServiceCode = $contactDescriptor['_contact']->array_options['options_service_code'];
+
+				break;
+			}
+		}
+	}
+
+
+	protected function parseGLNCode()
+	{
+		foreach ($this->object->_TContacts as $contactDescriptor)
+		{
+			if ($contactDescriptor['source'] != 'external')
+			{
+				continue;
+			}
+
+			if(! empty($contactDescriptor['_contact']->array_options['options_GLN_code']))
+			{
+				$this->object->thirdparty->_glnCode = $contactDescriptor['_contact']->array_options['options_GLN_code'];
 
 				break;
 			}
@@ -623,7 +633,7 @@ class EDIFormatFACSegmentPADIV extends EDIFormatSegment
 		)
 		, 2 => array(
 			'label' => 'Code EAN'
-			, 'data' => '""'
+			, 'data' => 'str_replace(" ", "", $object->_glnCode)'
 			, 'maxLength' => 13
 		)
 		, 3 => array(
@@ -766,7 +776,7 @@ class EDIFormatFACSegmentPADDP extends EDIFormatSegment
 		)
 		, 2 => array(
 			'label' => 'Code EAN'
-			, 'data' => '""'
+			, 'data' => 'str_replace(" ", "", $object->_glnCode)'
 			, 'maxLength' => 13
 		)
 		, 3 => array(
@@ -909,7 +919,7 @@ class EDIFormatFACSegmentPADSU extends EDIFormatSegment
 		)
 		, 2 => array(
 			'label' => 'Code EAN'
-			, 'data' => '""'
+			, 'data' => 'str_replace(" ", "", $object->_glnCode)'
 			, 'maxLength' => 13
 		)
 		, 3 => array(

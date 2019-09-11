@@ -17,6 +17,7 @@ ATGPCONNECTOR_FTP_PASS=Mot de passe
 ATGPCONNECTOR_FTP_PASS_desc=Laissez vide pour ne pas redéfinir.
 ATGPCONNECTOR_FTP_PASSIVE_MODE=Activer le mode passif
 ATGPC_ActivatedModes=Formats EDI
+ATGPCONNECTOR_MYSOC_GLN_CODE=Code GLN de la société
 ATGPCONNECTOR_DEV_MODE=Mode de tests
 ATGPCONNECTOR_FORMAT_FAC=Format factures FAC@EDI
 ATGPCONNECTOR_FORMAT_FAC_PATH=Format factures FAC@EDI : emplacement du dossier distant
