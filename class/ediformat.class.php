@@ -43,7 +43,7 @@ abstract class EDIFormat
 		foreach(static::$TSegments as $segmentID => $TSegmentDescriptor)
 		{
 			$segmentObj = eval('return '.$TSegmentDescriptor['object'].';');
-			$segmentClass = static::class . 'Segment' . $segmentID;
+			$segmentClass = get_class($this) . 'Segment' . $segmentID;
 
 			if(! class_exists($segmentClass))
 			{
