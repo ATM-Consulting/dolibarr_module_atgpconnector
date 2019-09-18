@@ -83,7 +83,7 @@ class EDIFormatFAC extends EDIFormat
 		// Code GLN
 
 		$mysoc->_glnCode = $conf->global->ATGPCONNECTOR_MYSOC_GLN_CODE;
-		$this->parseGLNCode();
+		$this->parseGLNCodes();
 
 
 		// RIB
@@ -204,9 +204,29 @@ class EDIFormatFAC extends EDIFormat
 
 
 		// Check required fields
-		if (empty($this->object->thirdparty->_glnCode) || ctype_space($this->object->thirdparty->_glnCode))
+		if (empty($this->object->context['vendeur']->context['GLNcode']) || ctype_space($this->object->context['vendeur']->context['GLNcode']))
 		{
-			$this->appendError('ATGPC_ErrorRequiredField', $this->object->ref, 'Code GLN');
+			$this->appendError('ATGPC_ErrorRequiredField', $this->object->ref, 'Code GLN vendeur');
+		}
+
+		if (empty($this->object->context['payeur']->context['GLNcode']) || ctype_space($this->object->context['payeur']->context['GLNcode']))
+		{
+			$this->appendError('ATGPC_ErrorRequiredField', $this->object->ref, 'Code GLN payeur');
+		}
+
+		if (empty($this->object->context['acheteur']->context['GLNcode']) || ctype_space($this->object->context['acheteur']->context['GLNcode']))
+		{
+			$this->appendError('ATGPC_ErrorRequiredField', $this->object->ref, 'Code GLN acheteur');
+		}
+
+		if (empty($this->object->context['destinataire']->context['GLNcode']) || ctype_space($this->object->context['destinataire']->context['GLNcode']))
+		{
+			$this->appendError('ATGPC_ErrorRequiredField', $this->object->ref, 'Code GLN destinataire');
+		}
+
+		if (empty($this->object->context['encaisseur']->context['GLNcode']) || ctype_space($this->object->context['encaisseur']->context['GLNcode']))
+		{
+			$this->appendError('ATGPC_ErrorRequiredField', $this->object->ref, 'Code GLN encaisseur');
 		}
 
 		// TVA
@@ -353,8 +373,14 @@ class EDIFormatFAC extends EDIFormat
 	}
 
 
-	protected function parseGLNCode()
+	protected function parseGLNCodes()
 	{
+		global $mysoc, $conf;
+
+		$this->object->context['payeur'] = null; // facturer à
+		$this->object->context['acheteur'] = null; // acheteur
+		$this->object->context['destinataire'] = null; // livrer à
+
 		foreach ($this->object->_TContacts as $contactDescriptor)
 		{
 			if ($contactDescriptor['source'] != 'external')
@@ -362,12 +388,62 @@ class EDIFormatFAC extends EDIFormat
 				continue;
 			}
 
-			if(! empty($contactDescriptor['_contact']->array_options['options_GLN_code']))
+			switch($contactDescriptor['code'])
 			{
-				$this->object->thirdparty->_glnCode = $contactDescriptor['_contact']->array_options['options_GLN_code'];
+				case 'BILLING':
+					$type = 'payeur';
+					break;
 
-				break;
+				case 'SHIPPING':
+					$type = 'destinataire';
+					break;
+
+				default:
+					continue;
 			}
+
+
+			$company = new Societe($this->object->db);
+			$company->fetch($contactDescriptor['socid']);
+
+			if (! empty($contactDescriptor['_contact']->array_options['options_GLN_code']))
+			{
+				$company->context['GLNcode'] = str_replace(' ', '', $contactDescriptor['_contact']->array_options['options_GLN_code']);
+			}
+			else
+			{
+				$company->context['GLNcode'] = str_replace(' ', '', $company->barcode);
+			}
+
+			$this->object->context[$type] = $company;
+		}
+
+
+		$mysoc->context['GLNcode'] = str_replace(' ', '', $conf->global->MAIN_INFO_SOCIETE_GENCOD);
+
+		$this->object->context['vendeur'] = $mysoc; // vendeur
+		$this->object->context['encaisseur'] = $mysoc; // régler à
+
+		$this->object->thirdparty->context['GLNcode'] = str_replace(' ', '', $this->object->thirdparty->barcode);
+
+		if(empty($this->object->context['payeur']))
+		{
+			$this->object->context['payeur'] = $this->object->thirdparty;
+		}
+
+		if(empty($this->object->context['acheteur']))
+		{
+			$this->object->context['acheteur'] = $this->object->thirdparty;
+		}
+
+		if(empty($this->object->context['destinataire']))
+		{
+			$this->object->context['destinataire'] = $this->object->thirdparty;
+		}
+
+		foreach($this->object->context AS $key => $company)
+		{
+			var_dump($key, $company->name, $company->context['GLNcode']);
 		}
 	}
 
@@ -657,46 +733,46 @@ class EDIFormatFACSegmentPAR extends EDIFormatSegment
 		)
 		, 2 => array(
 			'label' => 'Code EAN client (commandé par)'
-			, 'data' => 'str_replace(" ", "", $object->thirdparty->_glnCode)'
+			, 'data' => '$object->context["acheteur"]->context["GLNcode"]'
 			, 'maxLength' => 13
 			, 'required' => true
 		)
 		, 3 => array(
 			'label' => 'Libellé client'
-			, 'data' => '$object->thirdparty->name'
+			, 'data' => '$object->context["acheteur"]->name'
 			, 'maxLength' => 35
 		)
 		, 4 => array(
 			'label' => 'Code EAN fournisseur (commande à)'
-			, 'data' => 'str_replace(" ", "", $conf->global->ATGPCONNECTOR_MYSOC_GLN_CODE)'
+			, 'data' => '$object->context["vendeur"]->context["GLNcode"]'
 			, 'maxLength' => 13
 			, 'required' => true
 		)
 		, 5 => array(
 			'label' => 'Libellé fournisseur'
-			, 'data' => '$mysoc->name'
+			, 'data' => '$object->context["vendeur"]->name'
 			, 'maxLength' => 35
 		)
 		, 6 => array(
 			'label' => 'Code EAN client livré'
-			, 'data' => 'str_replace(" ", "", $object->thirdparty->_glnCode)' // TODO
+			, 'data' => '$object->context["destinataire"]->context["GLNcode"]'
 			, 'maxLength' => 13
 			, 'required' => true
 		)
 		, 7 => array(
 			'label' => 'Libellé client livré'
-			, 'data' => '$object->thirdparty->name' // TODO
+			, 'data' => '$object->context["destinataire"]->name'
 			, 'maxLength' => 35
 		)
 		, 8 => array(
 			'label' => 'Code EAN client facturé'
-			, 'data' => 'str_replace(" ", "", $object->thirdparty->_glnCode)' // TODO
+			, 'data' => '$object->context["payeur"]->context["GLNcode"]'
 			, 'maxLength' => 13
 			, 'required' => true
 		)
 		, 9 => array(
 			'label' => 'Libellé client facturé'
-			, 'data' => '$object->thirdparty->name' // TODO
+			, 'data' => '$object->context["payeur"]->name'
 			, 'maxLength' => 35
 		)
 		, 10 => array(
@@ -711,13 +787,13 @@ class EDIFormatFACSegmentPAR extends EDIFormatSegment
 		)
 		, 12 => array(
 			'label' => 'Code EAN régler à'
-			, 'data' => 'str_replace(" ", "", $conf->global->ATGPCONNECTOR_MYSOC_GLN_CODE)'
+			, 'data' => '$object->context["encaisseur"]->context["GLNcode"]'
 			, 'maxLength' => 13
 			, 'required' => true
 		)
 		, 13 => array(
 			'label' => 'Libellé régler à'
-			, 'data' => '$mysoc->name'
+			, 'data' => '$object->context["encaisseur"]->name'
 			, 'maxLength' => 35
 		)
 		, 14 => array(
