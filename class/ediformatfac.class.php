@@ -238,6 +238,15 @@ class EDIFormatFAC extends EDIFormat
 				}
 			}
 
+			if ($line->fk_product > 0) {
+				$product = new Product($this->object->db);
+				$product->fetch(intval($line->fk_product));
+
+				$line->product_barcode = $product->barcode;
+			} else {
+				$line->product_barcode = str_repeat('9', 13);
+			}
+
 			$total_ht = 0;
 			if ($line->special_code != 3) {
 				$total_ht = $sign * ($conf->multicurrency->enabled && $this->object->multicurrency_tx != 1 ? $line->multicurrency_total_ht : $line->total_ht);
@@ -1176,13 +1185,13 @@ class EDIFormatFACSegmentLIG extends EDIFormatSegment
 		)
 		, 3 => array(
 			'label' => 'Code EAN produit'
-			, 'data' => '$object->ref'
+			, 'data' => '$object->product_barcode'
 			, 'maxLength' => 14
 			, 'required' => true
 		)
 		, 4 => array(
 			'label' => 'Code interne produit chez le fournisseur'
-			, 'data' => '$object->ref_fourn'
+			, 'data' => '$object->ref'
 			, 'maxLength' => 35
 		)
 		, 5 => array(
