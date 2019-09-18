@@ -236,10 +236,11 @@ abstract class EDIFormatSegment
 
 		foreach(static::$TFields as $index => $TFieldDescritor)
 		{
-			$data = eval('return ' . $TFieldDescritor['data'] . ';'); // Utilise $object
+			$data = eval('return ' . $TFieldDescritor['data'] . ';'); // Peut utiliser $object, $key, $conf et $mysoc
 			$data = trim($data);
 			$data = str_replace(ATGPCONNECTOR_CSV_SEPARATOR, ' ', $data);
 			$data = substr($data, 0, $TFieldDescritor['maxLength']);
+			$data = mb_convert_encoding($data, 'ISO-8859-1', mb_detect_encoding($data));
 			$TData[] = $data;
 		}
 
@@ -248,3 +249,4 @@ abstract class EDIFormatSegment
 		return $TData;
 	}
 }
+
