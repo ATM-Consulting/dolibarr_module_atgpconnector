@@ -113,8 +113,8 @@ class EDIFormatFAC extends EDIFormat
 		$TDTM = array(
 			'11' => '' // Expédition
 			, '35' => '' // Livraison
-			, '263D' => '' // Début de période de facturation
-			, '263F' => '' // Fin de période de facturation
+			// TODO , '263D' => '' // Début de période de facturation
+			// TODO , '263F' => '' // Fin de période de facturation
 			, '69' => '' // Livraison promise
 		);
 
