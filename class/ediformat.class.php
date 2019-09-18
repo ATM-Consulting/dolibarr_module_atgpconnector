@@ -55,22 +55,22 @@ abstract class EDIFormat
 
 			if(! empty($TSegmentDescriptor['multiple']))
 			{
-				foreach($segmentObj as $key => $segmentSubObj)
+				if(is_array($segmentObj))
 				{
-					$TData = $segmentInstance->get($segmentSubObj, $key);
-					fwrite($csvHandle, implode(ATGPCONNECTOR_CSV_SEPARATOR, $TData) . PHP_EOL);
+					foreach ($segmentObj as $key => $segmentSubObj) {
+						$TData = $segmentInstance->get($segmentSubObj, $key);
+						fwrite($csvHandle, implode(ATGPCONNECTOR_CSV_SEPARATOR, $TData) . PHP_EOL);
 
-					if (isset($TSegmentDescriptor['LID']))
-					{
-						$val = eval('return '.$TSegmentDescriptor['LID']['object'].';');
-						$this->putLID($csvHandle, $TSegmentDescriptor['LID'], $val);
+						if (isset($TSegmentDescriptor['LID'])) {
+							$val = eval('return ' . $TSegmentDescriptor['LID']['object'] . ';');
+							$this->putLID($csvHandle, $TSegmentDescriptor['LID'], $val);
+						}
+
+						if (isset($TSegmentDescriptor['FTX'])) {
+							$val = eval('return ' . $TSegmentDescriptor['FTX']['object'] . ';');
+							$this->putFTX($csvHandle, $TSegmentDescriptor['FTX'], $val);
+						}
 					}
-
-					if (isset($TSegmentDescriptor['FTX']))
-                    {
-                        $val = eval('return '.$TSegmentDescriptor['FTX']['object'].';');
-                        $this->putFTX($csvHandle, $TSegmentDescriptor['FTX'], $val);
-                    }
 				}
 			}
 			else
@@ -145,12 +145,12 @@ abstract class EDIFormat
 		$lidClassName = get_class($this) . 'SegmentLID';
 		$segmentInstance = new $lidClassName();
 
-		if(! empty($TSegmentDescriptor['multiple']))
-		{
-			foreach($segmentObj as $key => $segmentSubObj)
-			{
-				$TData = $segmentInstance->get($segmentSubObj, $key);
-				fwrite($csvHandle, implode(ATGPCONNECTOR_CSV_SEPARATOR, $TData) . PHP_EOL);
+		if(! empty($TSegmentDescriptor['multiple'])) {
+			if (is_array($segmentObj)) {
+				foreach ($segmentObj as $key => $segmentSubObj) {
+					$TData = $segmentInstance->get($segmentSubObj, $key);
+					fwrite($csvHandle, implode(ATGPCONNECTOR_CSV_SEPARATOR, $TData) . PHP_EOL);
+				}
 			}
 		}
 		else
