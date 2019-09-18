@@ -14,6 +14,11 @@ class EDIFormatFAC extends EDIFormat
 			'required' => true
 			, 'object' => '$object'
 		)
+		, 'DTM' => array(
+			'required' => false
+			, 'multiple' => true
+			, 'object' => '$object->_TDTM'
+		)
 		, 'PAR' => array(
 			'required' => true
 			, 'object' => '$object'
@@ -104,21 +109,97 @@ class EDIFormatFAC extends EDIFormat
 		}
 
 
-		// Linked order
-		if (!empty($this->object->linkedObjects['commande'])) {
+		// Linked objects & dates
+		$TDTM = array(
+			'11' => '' // Expédition
+			, '35' => '' // Livraison
+			, '263D' => '' // Début de période de facturation
+			, '263F' => '' // Fin de période de facturation
+			, '69' => '' // Livraison promise
+		);
+
+		if (! empty($this->object->linkedObjects['shipping'])) {
+			reset($this->object->linkedObjects['shipping']);
+			$fkey = key($this->object->linkedObjects['shipping']);
+			$this->object->shipment = $this->object->linkedObjects['shipping'][$fkey];
+			$this->object->shipment->ref_client = $this->object->shipment->ref_customer;
+			$this->object->shipment->date = $this->object->shipment->date_shipping;
+
+			if(! empty($this->object->shipment->date_shipping))
+			{
+				// Date expédition
+				$TDTM['11'] = dol_print_date($this->object->shipment->date_shipping, '%d/%m/%Y');
+
+				// Date livraison prévue
+				$TDTM['69'] = dol_print_date($this->object->shipment->date_shipping, '%d/%m/%Y');
+			}
+
+			if(! empty($this->object->shipment->date_delivery))
+			{
+				// Date livraison
+				$TDTM['35'] = dol_print_date($this->object->shipment->date_delivery, '%d/%m/%Y');
+			}
+
+
+			$this->object->shipment->fetchObjectLinked();
+
+			if(! empty($this->object->shipment->linkedObjects['delivery']))
+			{
+				reset($this->object->shipment->linkedObjects['delivery']);
+				$fkey = key($this->object->shipment->linkedObjects['delivery']);
+				$this->object->delivery = $this->object->shipment->linkedObjects['delivery'][$fkey];
+				$this->object->delivery->date = $this->object->delivery->date_delivery;
+
+				// Date livraison
+				if(! empty($this->object->delivery->date_delivery))
+				{
+					$TDTM['35'] = dol_print_date($this->object->delivery->date_delivery, '%d/%m/%Y');
+				}
+			}
+			else
+			{
+				$this->object->delivery = $this->object->shipment;
+			}
+		}
+
+		if (! empty($this->object->linkedObjects['commande'])) {
 			reset($this->object->linkedObjects['commande']);
 			$fkey = key($this->object->linkedObjects['commande']);
-			$this->object->origin_object = $this->object->linkedObjects['commande'][$fkey];
+			$this->object->order = $this->object->linkedObjects['commande'][$fkey];
+
+			// Date expédition
+			if (! empty($this->object->order->date))
+			{
+				$TDTM['11'] = dol_print_date($this->object->order->date, '%d/%m/%Y');
+			}
+
+			// Date livraison
+			if (empty($TDTM['35']) && ! empty($this->object->order->date_livraison))
+			{
+				$TDTM['35'] = dol_print_date($this->object->order->date_livraison, '%d/%m/%Y');
+			}
+
+			// Date livraison prévue
+			if (empty($TDTM['69']) && ! empty($this->object->order->date_livraison))
+			{
+				$TDTM['69'] = dol_print_date($this->object->order->date_livraison, '%d/%m/%Y');
+			}
 		}
-		if (empty($this->object->origin_object->ref_client) && !empty($this->object->linkedObjects['contrat'])) {
+
+		if (! empty($this->object->linkedObjects['contrat'])) {
 			reset($this->object->linkedObjects['contrat']);
 			$fkey = key($this->object->linkedObjects['contrat']);
-			$this->object->origin_object = $this->object->linkedObjects['contrat'][$fkey];
-			$this->object->origin_object->ref_client = $this->object->origin_object->ref_customer;
-			$this->object->origin_object->date = $this->object->origin_object->date_contrat;
+			$this->object->contract = $this->object->linkedObjects['contrat'][$fkey];
+			$this->object->contract->ref_client = $this->object->contract->ref_customer;
+			$this->object->contract->date = $this->object->contract->date_contrat;
 		}
-		if (empty($this->object->origin_object->ref_client)) {
-			$this->object->origin_object = $this->object;
+
+		if(! empty($this->object->order)) {
+			$this->object->object_chorus = $this->object->order;
+		} elseif( ! empty($this->object->contract)) {
+			$this->object->object_chorus = $this->object->contract;
+		} else {
+			$this->object->object_chorus = $this->object;
 		}
 
 
@@ -215,6 +296,7 @@ class EDIFormatFAC extends EDIFormat
 
 		$this->object->lines = array_values($this->object->lines); // Pour redémarrer la numérotation des lignes
 
+		$this->object->_TDTM = $TDTM;
 		$this->object->_TTVA = $TTVA;
 		$this->object->_TCOM = $TCOM;
 	}
@@ -355,19 +437,19 @@ class EDIFormatFACSegmentENT extends EDIFormatSegment
 		)
 		, 2 => array(
 			'label' => 'Numéro de commande du client (Si Chorus : numéro d\'engagement)'
-			, 'data' => '$object->origin_object->ref_client'
+			, 'data' => '$object->object_chorus->ref_client'
 			, 'maxLength' => 70
 			, 'required' => true
 		)
 		, 3 => array(
 			'label' => 'Date de commande JJ/MM/AAAA'
-			, 'data' => 'dol_print_date($object->origin_object->date, "%d/%m/%Y")'
+			, 'data' => 'dol_print_date($object->object_chorus->date, "%d/%m/%Y")'
 			, 'maxLength' => 10
 			, 'required' => true
 		)
 		, 4 => array(
 			'label' => 'Heure de commande HH:MN'
-			, 'data' => 'dol_print_date($object->origin_object->date, "%H:%M")'
+			, 'data' => 'dol_print_date($object->object_chorus->date, "%H:%M")'
 			, 'maxLength' => 5
 		)
 		, 5 => array(
@@ -382,24 +464,24 @@ class EDIFormatFACSegmentENT extends EDIFormatSegment
 		)
 		, 7 => array(
 			'label' => 'Date du BL JJ/MM/AAAA'
-			, 'data' => '' // TODO
+			, 'data' => 'dol_print_date($object->delivery->date, "%d/%m/%Y")'
 			, 'maxLength' => 10
 			, 'required' => true
 		)
 		, 8 => array(
 			'label' => 'Numéro de BL'
-			, 'data' => '' // TODO
+			, 'data' => '$object->delivery->ref'
 			, 'maxLength' => 35
 			, 'required' => true
 		)
 		, 9 => array(
 			'label' => 'Date avis d\'expédition JJ/MM/AAAA'
-			, 'data' => ''
+			, 'data' => 'dol_print_date($object->shipment->date, "%d/%m/%Y")'
 			, 'maxLength' => 10
 		)
 		, 10 => array(
 			'label' => 'Numéro de l\'avis d\'expédition'
-			, 'data' => ''
+			, 'data' => '$object->shipment->ref'
 			, 'maxLength' => 35
 		)
 		, 11 => array(
@@ -527,6 +609,32 @@ class EDIFormatFACSegmentENT extends EDIFormatSegment
 		)
 	);
 }
+
+
+class EDIFormatFACSegmentDTM extends EDIFormatSegment
+{
+	public static $TFields = array(
+		1 => array(
+			'label' => 'Étiquette de segment "DTM"'
+			, 'data' => '"DTM"'
+			, 'maxLength' => 3
+			, 'required' => true
+		)
+		, 2 => array(
+			'label' => 'Code date (cf. table DTM)'
+			, 'data' => '$key'
+			, 'maxLength' => 4
+			, 'required' => true
+		)
+		, 3 => array(
+			'label' => 'Date JJ/MM/AAAA'
+			, 'data' => '$object'
+			, 'maxLength' => 10
+			, 'required' => true
+		)
+	);
+}
+
 
 
 class EDIFormatFACSegmentPAR extends EDIFormatSegment
