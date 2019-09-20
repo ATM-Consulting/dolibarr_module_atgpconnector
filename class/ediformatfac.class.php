@@ -23,17 +23,10 @@ class EDIFormatFAC extends EDIFormat
 			'required' => true
 			, 'object' => '$object'
 		)
-		, 'PADIV' => array(
+		, 'PAD' => array(
 			'required' => true
-			, 'object' => '$object->thirdparty'
-		)
-		, 'PADDP' => array(
-			'required' => true
-			, 'object' => '$object->thirdparty'
-		)
-		, 'PADSU' => array(
-			'required' => true
-			, 'object' => '$mysoc'
+			, 'multiple' => true
+			, 'object' => '$object->_TPAD'
 		)
 		, 'COM' => array(
 			'required' => false
@@ -69,24 +62,11 @@ class EDIFormatFAC extends EDIFormat
 		global $conf, $mysoc;
 
 
-		// RCS
-
-		$this->parseRCS($this->object->thirdparty);
-		$this->parseRCS($mysoc);
-
-
 		// Code service
-
 		$this->parseServiceCode();
 
 
-		// Code GLN
-
-		$this->parseGLNCodes();
-
-
 		// RIB
-
 		dol_include_once('/compta/bank/class/account.class.php');
 
 		$mysoc->_iban = '';
@@ -106,6 +86,14 @@ class EDIFormatFAC extends EDIFormat
 			$mysoc->_iban = $account->iban;
 			$mysoc->_bic = $account->bic;
 		}
+
+
+		// Partenaires (segments PAD) + Codes GLN (segment PAR)
+		$this->object->_TPAD = $this->parsePAD();
+
+
+		// RCS
+		$this->parseRCS();
 
 
 		// Linked objects & dates
@@ -203,27 +191,27 @@ class EDIFormatFAC extends EDIFormat
 
 
 		// Check required fields
-		if (empty($this->object->context['vendeur']->context['GLNcode']) || ctype_space($this->object->context['vendeur']->context['GLNcode']))
+		if (empty($this->object->_TPAD['SU']->context['GLNcode']) || ctype_space($this->object->_TPAD['SU']->context['GLNcode']))
 		{
 			$this->appendError('ATGPC_ErrorRequiredField', $this->object->ref, 'Code GLN vendeur');
 		}
 
-		if (empty($this->object->context['payeur']->context['GLNcode']) || ctype_space($this->object->context['payeur']->context['GLNcode']))
+		if (empty($this->object->_TPAD['IV']->context['GLNcode']) || ctype_space($this->object->_TPAD['IV']->context['GLNcode']))
 		{
 			$this->appendError('ATGPC_ErrorRequiredField', $this->object->ref, 'Code GLN payeur');
 		}
 
-		if (empty($this->object->context['acheteur']->context['GLNcode']) || ctype_space($this->object->context['acheteur']->context['GLNcode']))
+		if (empty($this->object->_TPAD['BY']->context['GLNcode']) || ctype_space($this->object->_TPAD['BY']->context['GLNcode']))
 		{
 			$this->appendError('ATGPC_ErrorRequiredField', $this->object->ref, 'Code GLN acheteur');
 		}
 
-		if (empty($this->object->context['destinataire']->context['GLNcode']) || ctype_space($this->object->context['destinataire']->context['GLNcode']))
+		if (empty($this->object->_TPAD['DP']->context['GLNcode']) || ctype_space($this->object->_TPAD['DP']->context['GLNcode']))
 		{
 			$this->appendError('ATGPC_ErrorRequiredField', $this->object->ref, 'Code GLN destinataire');
 		}
 
-		if (empty($this->object->context['encaisseur']->context['GLNcode']) || ctype_space($this->object->context['encaisseur']->context['GLNcode']))
+		if (empty($this->object->_TPAD['RE']->context['GLNcode']) || ctype_space($this->object->_TPAD['RE']->context['GLNcode']))
 		{
 			$this->appendError('ATGPC_ErrorRequiredField', $this->object->ref, 'Code GLN encaisseur');
 		}
@@ -330,33 +318,36 @@ class EDIFormatFAC extends EDIFormat
 	}
 
 
-	protected function parseRCS(&$societe)
+	protected function parseRCS()
 	{
-		$rcsRaw = $societe->idprof4;
-		$TRCSRaw = preg_split("/\s+/", $rcsRaw);
+		foreach($this->object->_TPAD as $type => &$company)
+		{
+			$rcsRaw = $company->idprof4;
+			$TRCSRaw = preg_split("/\s+/", $rcsRaw);
 
-		$rcsCode = '';
-		$rcsCodeLength = 0;
+			$rcsCode = '';
+			$rcsCodeLength = 0;
 
-		while ($rcsCodeLength < 10 && !empty($TRCSRaw)) {
-			$rcsCodeChunk = array_pop($TRCSRaw);
-			$rcsCode = $rcsCodeChunk . $rcsCode;
-			$rcsCodeLength += strlen($rcsCodeChunk);
+			while ($rcsCodeLength < 10 && !empty($TRCSRaw)) {
+				$rcsCodeChunk = array_pop($TRCSRaw);
+				$rcsCode = $rcsCodeChunk . $rcsCode;
+				$rcsCodeLength += strlen($rcsCodeChunk);
+			}
+
+			$rcsCity = implode(' ', $TRCSRaw);
+
+			if (strlen($rcsCode) > 10) {
+				$TMatches = array();
+
+				preg_match('/^(.+)(.{10})$/', $rcsCode, $TMatches);
+
+				$rcsCity .= ' ' . $TMatches[1];
+				$rcsCode = $TMatches[2];
+			}
+
+			$company->_rcsCity = $rcsCity;
+			$company->_rcsCode = $rcsCode;
 		}
-
-		$rcsCity = implode(' ', $TRCSRaw);
-
-		if (strlen($rcsCode) > 10) {
-			$TMatches = array();
-
-			preg_match('/^(.+)(.{10})$/', $rcsCode, $TMatches);
-
-			$rcsCity .= ' ' . $TMatches[1];
-			$rcsCode = $TMatches[2];
-		}
-
-		$societe->_rcsCity = $rcsCity;
-		$societe->_rcsCode = $rcsCode;
 	}
 
 
@@ -372,17 +363,23 @@ class EDIFormatFAC extends EDIFormat
 	}
 
 
-	protected function parseGLNCodes()
+	protected function parsePAD()
 	{
 		global $mysoc, $conf;
 
-		$this->object->context['payeur'] = null; // facturer à
-		$this->object->context['acheteur'] = null; // acheteur
-		$this->object->context['destinataire'] = null; // livrer à
+		$TPAD = array(
+			'IV' => null // Facturé à
+			, 'SU' => null // Facturé par
+			, 'BY' => null // Commandé par
+			, 'DP' => null // Livré à
+			// TODO , 'UC' => null // Destinataire final
+			// TODO , 'CO' => null // Siège social vendeur
+			, 'RE' => null // Régler à
+		);
 
 		foreach ($this->object->_TContacts as $contactDescriptor)
 		{
-			if ($contactDescriptor['source'] != 'external')
+			if ($contactDescriptor['source'] != 'external') // TODO Voir pour le cas où la société qui établit la facture est différent de celle qui reçoit le paiement
 			{
 				continue;
 			}
@@ -390,17 +387,21 @@ class EDIFormatFAC extends EDIFormat
 			switch($contactDescriptor['code'])
 			{
 				case 'BILLING':
-					$type = 'payeur';
+					$type = 'IV';
 					break;
 
 				case 'SHIPPING':
-					$type = 'destinataire';
+					$type = 'DP';
 					break;
 
 				default:
 					continue;
 			}
 
+			if (! empty($TPAD[$type]))
+			{
+				continue;
+			}
 
 			$company = new Societe($this->object->db);
 			$company->fetch($contactDescriptor['socid']);
@@ -414,31 +415,34 @@ class EDIFormatFAC extends EDIFormat
 				$company->context['GLNcode'] = str_replace(' ', '', $company->barcode);
 			}
 
-			$this->object->context[$type] = $company;
+			$TPAD[$type] = $company;
 		}
 
 
 		$mysoc->context['GLNcode'] = str_replace(' ', '', $conf->global->MAIN_INFO_SOCIETE_GENCOD);
 
-		$this->object->context['vendeur'] = $mysoc; // vendeur
-		$this->object->context['encaisseur'] = $mysoc; // régler à
+		$TPAD['SU'] = $mysoc; // Facturé par
+		$TPAD['RE'] = $mysoc; // Régler à
 
 		$this->object->thirdparty->context['GLNcode'] = str_replace(' ', '', $this->object->thirdparty->barcode);
 
-		if(empty($this->object->context['payeur']))
+		if(empty($TPAD['IV'])) // Facturé à
 		{
-			$this->object->context['payeur'] = $this->object->thirdparty;
+			$TPAD['IV'] = $this->object->thirdparty;
 		}
 
-		if(empty($this->object->context['acheteur']))
+		if(empty($TPAD['BY'])) // Commandé par
 		{
-			$this->object->context['acheteur'] = $this->object->thirdparty;
+			$TPAD['BY'] = $this->object->thirdparty;
 		}
 
-		if(empty($this->object->context['destinataire']))
+		if(empty($TPAD['DP'])) // Livré à
 		{
-			$this->object->context['destinataire'] = $this->object->thirdparty;
+			$TPAD['DP'] = $this->object->thirdparty;
 		}
+
+
+		return $TPAD;
 	}
 
 
@@ -727,46 +731,46 @@ class EDIFormatFACSegmentPAR extends EDIFormatSegment
 		)
 		, 2 => array(
 			'label' => 'Code EAN client (commandé par)'
-			, 'data' => '$object->context["acheteur"]->context["GLNcode"]'
+			, 'data' => '$object->_TPAD["BY"]->context["GLNcode"]'
 			, 'maxLength' => 13
 			, 'required' => true
 		)
 		, 3 => array(
 			'label' => 'Libellé client'
-			, 'data' => '$object->context["acheteur"]->name'
+			, 'data' => '$object->_TPAD["BY"]->name'
 			, 'maxLength' => 35
 		)
 		, 4 => array(
 			'label' => 'Code EAN fournisseur (commande à)'
-			, 'data' => '$object->context["vendeur"]->context["GLNcode"]'
+			, 'data' => '$object->_TPAD["SU"]->context["GLNcode"]'
 			, 'maxLength' => 13
 			, 'required' => true
 		)
 		, 5 => array(
 			'label' => 'Libellé fournisseur'
-			, 'data' => '$object->context["vendeur"]->name'
+			, 'data' => '$object->_TPAD["SU"]->name'
 			, 'maxLength' => 35
 		)
 		, 6 => array(
 			'label' => 'Code EAN client livré'
-			, 'data' => '$object->context["destinataire"]->context["GLNcode"]'
+			, 'data' => '$object->_TPAD["DP"]->context["GLNcode"]'
 			, 'maxLength' => 13
 			, 'required' => true
 		)
 		, 7 => array(
 			'label' => 'Libellé client livré'
-			, 'data' => '$object->context["destinataire"]->name'
+			, 'data' => '$object->_TPAD["DP"]->name'
 			, 'maxLength' => 35
 		)
 		, 8 => array(
 			'label' => 'Code EAN client facturé'
-			, 'data' => '$object->context["payeur"]->context["GLNcode"]'
+			, 'data' => '$object->_TPAD["IV"]->context["GLNcode"]'
 			, 'maxLength' => 13
 			, 'required' => true
 		)
 		, 9 => array(
 			'label' => 'Libellé client facturé'
-			, 'data' => '$object->context["payeur"]->name'
+			, 'data' => '$object->_TPAD["IV"]->name'
 			, 'maxLength' => 35
 		)
 		, 10 => array(
@@ -781,23 +785,23 @@ class EDIFormatFACSegmentPAR extends EDIFormatSegment
 		)
 		, 12 => array(
 			'label' => 'Code EAN régler à'
-			, 'data' => '$object->context["encaisseur"]->context["GLNcode"]'
+			, 'data' => '$object->_TPAD["RE"]->context["GLNcode"]'
 			, 'maxLength' => 13
 			, 'required' => true
 		)
 		, 13 => array(
 			'label' => 'Libellé régler à'
-			, 'data' => '$object->context["encaisseur"]->name'
+			, 'data' => '$object->_TPAD["RE"]->name'
 			, 'maxLength' => 35
 		)
 		, 14 => array(
 			'label' => 'Code EAN siège social vendeur (obligatoire si différent du code EAN vendeur)'
-			, 'data' => ''
+			, 'data' => '' // TODO
 			, 'maxLength' => 13
 		)
 		, 15 => array(
 			'label' => 'Libellé siège social vendeur'
-			, 'data' => ''
+			, 'data' => '' // TODO
 			, 'maxLength' => 35
 		)
 		, 16 => array(
@@ -809,7 +813,7 @@ class EDIFormatFACSegmentPAR extends EDIFormatSegment
 }
 
 
-class EDIFormatFACSegmentPADIV extends EDIFormatSegment
+class EDIFormatFACSegmentPAD extends EDIFormatSegment
 {
 	public static $TFields = array(
 		1 => array(
@@ -831,7 +835,7 @@ class EDIFormatFACSegmentPADIV extends EDIFormatSegment
 		)
 		, 4 => array(
 			'label' => 'Type de partenaire (cf table PAD.4)'
-			, 'data' => '"IV"' // TODO
+			, 'data' => '$key'
 			, 'maxLength' => 3
 			, 'required' => true
 		)
@@ -894,7 +898,7 @@ class EDIFormatFACSegmentPADIV extends EDIFormatSegment
 		)
 		, 16 => array(
 			'label' => 'Forme juridique'
-			, 'data' => '$object->forme_juridique'
+			, 'data' => '$object->forme_juridique_code > 0 ? $object->forme_juridique : ""'
 			, 'maxLength' => 35
 		)
 		, 17 => array(
@@ -926,292 +930,6 @@ class EDIFormatFACSegmentPADIV extends EDIFormatSegment
 		, 22 => array(
 			'label' => 'SWIFT/BIC'
 			, 'data' => '""'
-			, 'maxLength' => 35
-		)
-		, 23 => array(
-			'label' => 'Téléphone'
-			, 'data' => '$object->phone'
-			, 'maxLength' => 35
-		)
-		, 24 => array(
-			'label' => 'Fax'
-			, 'data' => '$object->fax'
-			, 'maxLength' => 35
-		)
-		, 25 => array(
-			'label' => 'Email'
-			, 'data' => '$object->email'
-			, 'maxLength' => 35
-		)
-		, 26 => array(
-			'label' => 'Libellé code service (Chorus)'
-			, 'data' => '""'
-			, 'maxLength' => 50
-		)
-	);
-}
-
-
-class EDIFormatFACSegmentPADDP extends EDIFormatSegment
-{
-	public static $TFields = array(
-		1 => array(
-			'label' => 'Étiquette de segment "PAD"'
-			, 'data' => '"PAD"'
-			, 'maxLength' => 3
-			, 'required' => true
-		)
-		, 2 => array(
-			'label' => 'Code EAN'
-			, 'data' => 'str_replace(" ", "", $object->_glnCode)'
-			, 'maxLength' => 13
-		)
-		, 3 => array(
-			'label' => 'Raison sociale'
-			, 'data' => '$object->nom'
-			, 'maxLength' => 35
-			, 'required' => true
-		)
-		, 4 => array(
-			'label' => 'Type de partenaire (cf table PAD.4)'
-			, 'data' => '"DP"'
-			, 'maxLength' => 3
-			, 'required' => true
-		)
-		, 5 => array(
-			'label' => 'Adresse'
-			, 'data' => 'explode("\n", $object->address)[0]'
-			, 'maxLength' => 35
-			, 'required' => true
-		)
-		, 6 => array(
-			'label' => 'Adresse ligne 2'
-			, 'data' => 'explode("\n", $object->address)[1]'
-			, 'maxLength' => 35
-		)
-		, 7 => array(
-			'label' => 'Adresse ligne 3'
-			, 'data' => 'str_replace("\n", " ", explode("\n", $object->address, 3)[2])'
-			, 'maxLength' => 35
-		)
-		, 8 => array(
-			'label' => 'Code postal'
-			, 'data' => '$object->zip'
-			, 'maxLength' => 9
-			, 'required' => true
-		)
-		, 9 => array(
-			'label' => 'Ville'
-			, 'data' => '$object->town'
-			, 'maxLength' => 35
-		)
-		, 10 => array(
-			'label' => 'Code pays'
-			, 'data' => '$object->country_code'
-			, 'maxLength' => 3
-		)
-		, 11 => array(
-			'label' => 'SIREN'
-			, 'data' => 'str_replace(" ", "", $object->idprof1)'
-			, 'maxLength' => 35
-		)
-		, 12 => array(
-			'label' => 'Numéro d\'identification TVA'
-			, 'data' => 'str_replace(" ", "", $object->tva_intra)'
-			, 'maxLength' => 35
-		)
-		, 13 => array(
-			'label' => 'RCS Ville'
-			, 'data' => '$object->_rcsCity'
-			, 'maxLength' => 35
-		)
-		, 14 => array(
-			'label' => 'RCS Numéro'
-			, 'data' => '$object->_rcsCode'
-			, 'maxLength' => 35
-		)
-		, 15 => array(
-			'label' => 'Capital social'
-			, 'data' => '$object->capital'
-			, 'maxLength' => 35
-		)
-		, 16 => array(
-			'label' => 'Forme juridique'
-			, 'data' => '$object->forme_juridique'
-			, 'maxLength' => 35
-		)
-		, 17 => array(
-			'label' => 'Référence fournisseur chez la centrale'
-			, 'data' => '""'
-			, 'maxLength' => 35
-		)
-		, 18 => array(
-			'label' => 'Code interne partenaire chez le client'
-			, 'data' => '""'
-			, 'maxLength' => 35
-		)
-		, 19 => array(
-			'label' => 'Code service'
-			, 'data' => '$object->_chorusServiceCode'
-			, 'maxLength' => 35
-		)
-		, 20 => array(
-			'label' => 'SIRET'
-			, 'data' => 'str_replace(" ", "", $object->idprof2)'
-			, 'maxLength' => 35
-			, 'required' => true
-		)
-		, 21 => array(
-			'label' => 'IBAN'
-			, 'data' => '""'
-			, 'maxLength' => 35
-		)
-		, 22 => array(
-			'label' => 'SWIFT/BIC'
-			, 'data' => '""'
-			, 'maxLength' => 35
-		)
-		, 23 => array(
-			'label' => 'Téléphone'
-			, 'data' => '$object->phone'
-			, 'maxLength' => 35
-		)
-		, 24 => array(
-			'label' => 'Fax'
-			, 'data' => '$object->fax'
-			, 'maxLength' => 35
-		)
-		, 25 => array(
-			'label' => 'Email'
-			, 'data' => '$object->email'
-			, 'maxLength' => 35
-		)
-		, 26 => array(
-			'label' => 'Libellé code service (Chorus)'
-			, 'data' => '""'
-			, 'maxLength' => 50
-		)
-	);
-}
-
-
-class EDIFormatFACSegmentPADSU extends EDIFormatSegment
-{
-	public static $TFields = array(
-		1 => array(
-			'label' => 'Étiquette de segment "PAD"'
-			, 'data' => '"PAD"'
-			, 'maxLength' => 3
-			, 'required' => true
-		)
-		, 2 => array(
-			'label' => 'Code EAN'
-			, 'data' => 'str_replace(" ", "", $object->context["GLNcode"])'
-			, 'maxLength' => 13
-		)
-		, 3 => array(
-			'label' => 'Raison sociale'
-			, 'data' => '$object->nom'
-			, 'maxLength' => 35
-			, 'required' => true
-		)
-		, 4 => array(
-			'label' => 'Type de partenaire (cf table PAD.4)'
-			, 'data' => '"SU"'
-			, 'maxLength' => 3
-			, 'required' => true
-		)
-		, 5 => array(
-			'label' => 'Adresse'
-			, 'data' => 'explode("\n", $object->address)[0]'
-			, 'maxLength' => 35
-			, 'required' => true
-		)
-		, 6 => array(
-			'label' => 'Adresse ligne 2'
-			, 'data' => 'explode("\n", $object->address)[1]'
-			, 'maxLength' => 35
-		)
-		, 7 => array(
-			'label' => 'Adresse ligne 3'
-			, 'data' => 'str_replace("\n", " ", explode("\n", $object->address, 3)[2])'
-			, 'maxLength' => 35
-		)
-		, 8 => array(
-			'label' => 'Code postal'
-			, 'data' => '$object->zip'
-			, 'maxLength' => 9
-			, 'required' => true
-		)
-		, 9 => array(
-			'label' => 'Ville'
-			, 'data' => '$object->town'
-			, 'maxLength' => 35
-		)
-		, 10 => array(
-			'label' => 'Code pays'
-			, 'data' => '$object->country_code'
-			, 'maxLength' => 3
-		)
-		, 11 => array(
-			'label' => 'SIREN'
-			, 'data' => 'str_replace(" ", "", $object->idprof1)'
-			, 'maxLength' => 35
-		)
-		, 12 => array(
-			'label' => 'Numéro d\'identification TVA'
-			, 'data' => 'str_replace(" ", "", $object->tva_intra)'
-			, 'maxLength' => 35
-		)
-		, 13 => array(
-			'label' => 'RCS Ville'
-			, 'data' => '$object->_rcsCity'
-			, 'maxLength' => 35
-		)
-		, 14 => array(
-			'label' => 'RCS Numéro'
-			, 'data' => '$object->_rcsCode'
-			, 'maxLength' => 35
-		)
-		, 15 => array(
-			'label' => 'Capital social'
-			, 'data' => '$object->capital'
-			, 'maxLength' => 35
-		)
-		, 16 => array(
-			'label' => 'Forme juridique'
-			, 'data' => '$object->forme_juridique'
-			, 'maxLength' => 35
-		)
-		, 17 => array(
-			'label' => 'Référence fournisseur chez la centrale'
-			, 'data' => '""'
-			, 'maxLength' => 35
-		)
-		, 18 => array(
-			'label' => 'Code interne partenaire chez le client'
-			, 'data' => '""'
-			, 'maxLength' => 35
-		)
-		, 19 => array(
-			'label' => 'Code service'
-			, 'data' => '""'
-			, 'maxLength' => 35
-		)
-		, 20 => array(
-			'label' => 'SIRET'
-			, 'data' => 'str_replace(" ", "", $object->idprof2)'
-			, 'maxLength' => 35
-			, 'required' => true
-		)
-		, 21 => array(
-			'label' => 'IBAN'
-			, 'data' => 'str_replace(" ", "", $object->_iban)'
-			, 'maxLength' => 35
-		)
-		, 22 => array(
-			'label' => 'SWIFT/BIC'
-			, 'data' => '$object->_bic'
 			, 'maxLength' => 35
 		)
 		, 23 => array(
