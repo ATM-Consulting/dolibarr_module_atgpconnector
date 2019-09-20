@@ -111,7 +111,6 @@ setup_print_on_off('ATGPCONNECTOR_FTP_PASSIVE_MODE');
 
 setup_print_title('ATGPC_ActivatedModes');
 
-setup_print_input_form_part('ATGPCONNECTOR_MYSOC_GLN_CODE');
 setup_print_on_off('ATGPCONNECTOR_DEV_MODE');
 setup_print_on_off('ATGPCONNECTOR_FORMAT_FAC');
 

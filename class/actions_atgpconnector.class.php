@@ -275,31 +275,30 @@ class Actionsatgpconnector
 		global $conf, $db;
 
 		if(
-			! $this->_canHandleEDI($parameters, $object, $action, $hookmanager)
-			||	! in_array($targetContext, explode(':', $parameters['context']))
-			||	empty($conf->global->ATGPCONNECTOR_FORMAT_FAC)
+				! $this->_canHandleEDI($parameters, $object, $action, $hookmanager) // Les coordonnées FTP doivent être renseignées
+			||	! in_array($targetContext, explode(':', $parameters['context'])) // Le contexte du hook doit être le bon
+			||	empty($conf->global->ATGPCONNECTOR_FORMAT_FAC) // Le format FAC@EDI doit être activé
+			||  empty($conf->global->MAIN_INFO_SOCIETE_GENCOD) // Le code-barre (code GLN) de la société doit être renseigné
 		)
 		{
 			return false;
 		}
 
 		return $massAction || (
-			$object->statut > Facture::STATUS_DRAFT
-			&&	empty($object->array_options['options_atgp_status'])
-			&&	! empty($object->thirdparty->idprof2)
+				$object->statut > Facture::STATUS_DRAFT // La facture doit au moins être validée
+			&&	empty($object->array_options['options_atgp_status']) // Le statut @GP doit être vide
 		);
 	}
 
 
 	function _canHandleEDIFACChorus($parameters, &$object, &$action, $hookmanager, $targetContext = 'invoicecard', $massAction = false)
 	{
-		global $conf, $db;
+		global $conf, $db, $mysoc;
 
 		if(
-				! $this->_canHandleEDI($parameters, $object, $action, $hookmanager)
-			||	! in_array($targetContext, explode(':', $parameters['context']))
-			||	empty($conf->global->ATGPCONNECTOR_FORMAT_FAC_CHORUS)
-			||  empty($conf->global->ATGPCONNECTOR_MYSOC_GLN_CODE)
+				! $this->_canHandleEDI($parameters, $object, $action, $hookmanager) // Les coordonnées FTP doivent être renseignées
+			||	! in_array($targetContext, explode(':', $parameters['context'])) // Le contexte du hook doit être le bon
+			||	empty($conf->global->ATGPCONNECTOR_FORMAT_FAC_CHORUS) // Le format FAC@EDI Chorus doit être activé
 		)
 		{
 			return false;
@@ -309,7 +308,7 @@ class Actionsatgpconnector
 		{
 			dol_include_once('/categories/class/categorie.class.php');
 
-			if($conf->global->ATGPCONNECTOR_FORMAT_FAC_CHORUS_CATEGORY <= 0)
+			if($conf->global->ATGPCONNECTOR_FORMAT_FAC_CHORUS_CATEGORY <= 0) // La catégorie des tiers concernés par Chorus doit être renseignée
 			{
 				return false;
 			}
@@ -317,17 +316,16 @@ class Actionsatgpconnector
 			$category = new Categorie($db);
 			$categoryFetchReturn = $category->fetch($conf->global->ATGPCONNECTOR_FORMAT_FAC_CHORUS_CATEGORY);
 
-			if($categoryFetchReturn <= 0)
+			if($categoryFetchReturn <= 0) // La catégorie des tiers concernés par Chorus doit être renseignée et exister
 			{
 				return false;
 			}
 		}
 
 		return $massAction || (
-				$object->statut > Facture::STATUS_DRAFT
-			&&	empty($object->array_options['options_atgp_status'])
-			&&	! empty($object->thirdparty->idprof2)
-			&&	$category->containsObject('customer', $object->thirdparty->id) > 0
+				$object->statut > Facture::STATUS_DRAFT // La facture doit au moins être validée
+			&&	empty($object->array_options['options_atgp_status']) // Le statut @GP doit être vide
+			&&	$category->containsObject('customer', $object->thirdparty->id) > 0 // Le tiers doit être dans la catégorie Chorus
 		);
 	}
 
