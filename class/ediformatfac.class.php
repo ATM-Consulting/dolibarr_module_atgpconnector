@@ -439,11 +439,6 @@ class EDIFormatFAC extends EDIFormat
 		{
 			$this->object->context['destinataire'] = $this->object->thirdparty;
 		}
-
-		foreach($this->object->context AS $key => $company)
-		{
-			var_dump($key, $company->name, $company->context['GLNcode']);
-		}
 	}
 
 
