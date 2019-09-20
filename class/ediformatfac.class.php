@@ -82,7 +82,6 @@ class EDIFormatFAC extends EDIFormat
 
 		// Code GLN
 
-		$mysoc->_glnCode = $conf->global->ATGPCONNECTOR_MYSOC_GLN_CODE;
 		$this->parseGLNCodes();
 
 
@@ -826,7 +825,7 @@ class EDIFormatFACSegmentPADIV extends EDIFormatSegment
 		)
 		, 2 => array(
 			'label' => 'Code EAN'
-			, 'data' => 'str_replace(" ", "", $object->_glnCode)'
+			, 'data' => 'str_replace(" ", "", $object->context["GLNcode"])'
 			, 'maxLength' => 13
 		)
 		, 3 => array(
@@ -1112,7 +1111,7 @@ class EDIFormatFACSegmentPADSU extends EDIFormatSegment
 		)
 		, 2 => array(
 			'label' => 'Code EAN'
-			, 'data' => 'str_replace(" ", "", $object->_glnCode)'
+			, 'data' => 'str_replace(" ", "", $object->context["GLNcode"])'
 			, 'maxLength' => 13
 		)
 		, 3 => array(
