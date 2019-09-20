@@ -492,7 +492,7 @@ class EDIFormatFACSegmentATGP extends EDIFormatSegment
 		)
 		, 6 => array(
 			'label' => 'Qualifiant émetteur'
-			, 'data' => ''
+			, 'data' => '""'
 			, 'maxLength' => 3
 		)
 		, 7 => array(
@@ -502,7 +502,7 @@ class EDIFormatFACSegmentATGP extends EDIFormatSegment
 		)
 		, 8 => array(
 			'label' => 'Qualifiant émetteur'
-			, 'data' => ''
+			, 'data' => '""'
 			, 'maxLength' => 3
 		)
 	);
@@ -826,6 +826,7 @@ class EDIFormatFACSegmentPAD extends EDIFormatSegment
 			'label' => 'Code EAN'
 			, 'data' => 'str_replace(" ", "", $object->context["GLNcode"])'
 			, 'maxLength' => 13
+			, 'required' => true
 		)
 		, 3 => array(
 			'label' => 'Raison sociale'
@@ -924,12 +925,12 @@ class EDIFormatFACSegmentPAD extends EDIFormatSegment
 		)
 		, 21 => array(
 			'label' => 'IBAN'
-			, 'data' => '""'
+			, 'data' => '$object->_iban'
 			, 'maxLength' => 35
 		)
 		, 22 => array(
 			'label' => 'SWIFT/BIC'
-			, 'data' => '""'
+			, 'data' => '$object->_bic'
 			, 'maxLength' => 35
 		)
 		, 23 => array(
