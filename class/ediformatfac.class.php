@@ -88,13 +88,17 @@ class EDIFormatFAC extends EDIFormat
 		}
 
 
+		if (! empty($this->object->linkedObjects['commande'])) {
+			reset($this->object->linkedObjects['commande']);
+			$fkey = key($this->object->linkedObjects['commande']);
+			$this->object->order = $this->object->linkedObjects['commande'][$fkey];
+		}
+
 		// Partenaires (segments PAD) + Codes GLN (segment PAR)
 		$this->object->_TPAD = $this->parsePAD();
 
-
 		// RCS
 		$this->parseRCS();
-
 
 		// Linked objects & dates
 		$TDTM = array(
@@ -149,10 +153,8 @@ class EDIFormatFAC extends EDIFormat
 			}
 		}
 
-		if (! empty($this->object->linkedObjects['commande'])) {
-			reset($this->object->linkedObjects['commande']);
-			$fkey = key($this->object->linkedObjects['commande']);
-			$this->object->order = $this->object->linkedObjects['commande'][$fkey];
+		// $this->object->order is populate just before $this->object->_TPAD = $this->parsePAD
+		if (! empty($this->object->order)) {
 
 			// Date expédition
 			if (! empty($this->object->order->date))
@@ -171,6 +173,7 @@ class EDIFormatFAC extends EDIFormat
 			{
 				$TDTM['69'] = dol_print_date($this->object->order->date_livraison, '%d/%m/%Y');
 			}
+
 		}
 
 		if (! empty($this->object->linkedObjects['contrat'])) {
@@ -181,6 +184,7 @@ class EDIFormatFAC extends EDIFormat
 			$this->object->contract->date = $this->object->contract->date_contrat;
 		}
 
+		//$this->object->order is populate just before
 		if(! empty($this->object->order)) {
 			$this->object->object_chorus = $this->object->order;
 		} elseif( ! empty($this->object->contract)) {
@@ -431,9 +435,42 @@ class EDIFormatFAC extends EDIFormat
 			$TPAD['IV'] = $this->object->thirdparty;
 		}
 
+
 		if(empty($TPAD['BY'])) // Commandé par
 		{
-			$TPAD['BY'] = $this->object->thirdparty;
+			//"Order by" is defined on contact on order (type External/CUSTOMER) linked to invoice
+			if (isset($this->object->order) && !empty($this->object->order) && is_object($this->object->order)) {
+				require_once DOL_DOCUMENT_ROOT.'/commande/class/commande.class.php';
+				if (get_class($this->object->order)=='Commande') {
+					$TContact = $this->object->order->liste_contact(-1, 'external', 1, 'CUSTOMER');
+					if (is_array($TContact) && count($TContact)> 0) {
+
+						dol_include_once('/contact/class/contact.class.php');
+
+						$contactDescriptor['_contact'] = new Contact($this->object->db);
+						$contactDescriptor['_contact']->fetch($TContact[0]);
+
+						$company = new Societe($this->object->db);
+						$company->fetch($contactDescriptor['_contact']->socid);
+
+						if (! empty($contactDescriptor['_contact']->array_options['options_GLN_code']))
+						{
+							$company->context['GLNcode'] = str_replace(' ', '', $contactDescriptor['_contact']->array_options['options_GLN_code']);
+							$company->address=$contactDescriptor['_contact']->address;
+							$company->zip=$contactDescriptor['_contact']->zip;
+							$company->town=$contactDescriptor['_contact']->town;
+							$company->country=$contactDescriptor['_contact']->country;
+							$company->name=$contactDescriptor['_contact']->lastname;
+						}
+
+						$TPAD['BY'] = $company;
+					} else {
+						$this->appendError('ATGPC_ErrorRequiredField', $this->object->ref, 'Contact external/CUSTOMER (cf dictionnay type of contact "Contact client suivi commande") must be defined on order link to invoice\'');
+					}
+				}
+			} else {
+				$TPAD['BY'] = $this->object->thirdparty;
+			}
 		}
 
 		if(empty($TPAD['DP'])) // Livré à
@@ -547,7 +584,7 @@ class EDIFormatFACSegmentENT extends EDIFormatSegment
 		)
 		, 7 => array(
 			'label' => 'Date du BL JJ/MM/AAAA'
-			, 'data' => 'dol_print_date($object->delivery->date, "%d/%m/%Y")'
+			, 'data' => 'dol_print_date($object->delivery->date_delivery, "%d/%m/%Y")'
 			, 'maxLength' => 10
 			, 'required' => true
 		)
@@ -559,7 +596,7 @@ class EDIFormatFACSegmentENT extends EDIFormatSegment
 		)
 		, 9 => array(
 			'label' => 'Date avis d\'expédition JJ/MM/AAAA'
-			, 'data' => 'dol_print_date($object->shipment->date, "%d/%m/%Y")'
+			, 'data' => 'dol_print_date($object->shipment->date_delivery, "%d/%m/%Y")'
 			, 'maxLength' => 10
 		)
 		, 10 => array(
