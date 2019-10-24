@@ -398,6 +398,10 @@ class EDIFormatFAC extends EDIFormat
 					$type = 'DP';
 					break;
 
+				case 'SERVICE':
+					$type = 'BY';
+					break;
+
 				default:
 					continue;
 			}
@@ -438,39 +442,7 @@ class EDIFormatFAC extends EDIFormat
 
 		if(empty($TPAD['BY'])) // Commandé par
 		{
-			//"Order by" is defined on contact on order (type External/CUSTOMER) linked to invoice
-			if (isset($this->object->order) && !empty($this->object->order) && is_object($this->object->order)) {
-				require_once DOL_DOCUMENT_ROOT.'/commande/class/commande.class.php';
-				if (get_class($this->object->order)=='Commande') {
-					$TContact = $this->object->order->liste_contact(-1, 'external', 1, 'CUSTOMER');
-					if (is_array($TContact) && count($TContact)> 0) {
-
-						dol_include_once('/contact/class/contact.class.php');
-
-						$contactDescriptor['_contact'] = new Contact($this->object->db);
-						$contactDescriptor['_contact']->fetch($TContact[0]);
-
-						$company = new Societe($this->object->db);
-						$company->fetch($contactDescriptor['_contact']->socid);
-
-						if (! empty($contactDescriptor['_contact']->array_options['options_GLN_code']))
-						{
-							$company->context['GLNcode'] = str_replace(' ', '', $contactDescriptor['_contact']->array_options['options_GLN_code']);
-							$company->address=$contactDescriptor['_contact']->address;
-							$company->zip=$contactDescriptor['_contact']->zip;
-							$company->town=$contactDescriptor['_contact']->town;
-							$company->country=$contactDescriptor['_contact']->country;
-							$company->name=$contactDescriptor['_contact']->lastname;
-						}
-
-						$TPAD['BY'] = $company;
-					} else {
-						$this->appendError('ATGPC_ErrorRequiredField', $this->object->ref, 'Contact external/CUSTOMER (cf dictionnay type of contact "Contact client suivi commande") must be defined on order link to invoice\'');
-					}
-				}
-			} else {
-				$TPAD['BY'] = $this->object->thirdparty;
-			}
+			$TPAD['BY'] = $this->object->thirdparty;
 		}
 
 		if(empty($TPAD['DP'])) // Livré à
