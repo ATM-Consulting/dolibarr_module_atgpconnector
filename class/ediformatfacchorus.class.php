@@ -980,13 +980,15 @@ class EDIFormatFACChorusSegmentLIG extends EDIFormatSegment
 		, 5 => array(
 			'label' => 'Par combien (multiple de commande)'
 			, 'data' => '1.000' // TODO
-			, 'maxLength' => 14 // 10\3
+			, 'maxLength' => 10 // 10\3
+			, 'maxPrecision' => 3
 			, 'required' => true
 		)
 		, 6 => array(
 			'label' => 'Quantité commandée'
 			, 'data' => ''
-			, 'maxLength' => 14 // 10\3
+			, 'maxLength' => 10 // 10\3
+			, 'maxPrecision' => 3
 		)
 		, 7 => array(
 			'label' => 'Unité de quantité (cf table MEA.4)'
@@ -996,14 +998,16 @@ class EDIFormatFACChorusSegmentLIG extends EDIFormatSegment
 		)
 		, 8 => array(
 			'label' => 'Quantité facturée'
-			, 'data' => 'sprintf("%10.3f", price2num($object->qty))'
-			, 'maxLength' => 14 // 10\3
+			, 'data' => 'price2num($object->qty)'
+			, 'maxLength' => 10 // 10\3
+			, 'maxPrecision' => 3
 			, 'required' => true
 		)
 		, 9 => array(
 			'label' => 'Prix unitaire net'
-			, 'data' => 'sprintf("%15.6f", price2num($object->qty > 0 ? $object->total_ht / $object->qty : 0))'
-			, 'maxLength' => 22 // 15\6
+			, 'data' => 'price2num($object->qty > 0 ? $object->total_ht / $object->qty : 0)'
+			, 'maxLength' => 15 // 15\6
+			, 'maxPrecision' => 6
 			, 'required' => true
 		)
 		, 10 => array(
@@ -1024,20 +1028,23 @@ class EDIFormatFACChorusSegmentLIG extends EDIFormatSegment
 		)
 		, 13 => array(
 			'label' => 'Taux de TVA (par exemple 19,6)'
-			, 'data' => 'sprintf("%5.2f", price2num($object->tva_tx))'
-			, 'maxLength' => 8 // 5\2
+			, 'data' => 'price2num($object->tva_tx)'
+			, 'maxLength' => 5 // 5\2
+			, 'maxPrecision' => 2
 			, 'required' => true
 		)
 		, 14 => array(
 			'label' => 'Prix unitaire brut'
-			, 'data' => 'sprintf("%15.6f", price2num($object->subprice))'
-			, 'maxLength' => 22 // 15\6
+			, 'data' => 'price2num($object->subprice)'
+			, 'maxLength' => 15 // 15\6
+			, 'maxPrecision' => 6
 			, 'required' => true
 		)
 		, 15 => array(
 			'label' => 'Poids net total ligne'
 			, 'data' => ''
-			, 'maxLength' => 13 // 9\3
+			, 'maxLength' => 9 // 9\3
+			, 'maxPrecision' => 3
 		)
 		, 16 => array(
 			'label' => 'Libellé ligne de facture (ou libellé du produit)'
@@ -1047,8 +1054,9 @@ class EDIFormatFACChorusSegmentLIG extends EDIFormatSegment
 		)
 		, 17 => array(
 			'label' => 'Montant net HT total ligne'
-			, 'data' => 'sprintf("%17.2f", price2num($object->total_ht))'
-			, 'maxLength' => 20 // 17\2
+			, 'data' => 'price2num($object->total_ht)'
+			, 'maxLength' => 17 // 17\2
+			, 'maxPrecision' => 2
 			, 'required' => true
 		)
 		, 18 => array(
@@ -1059,12 +1067,14 @@ class EDIFormatFACChorusSegmentLIG extends EDIFormatSegment
 		, 19 => array(
 			'label' => 'Prix net ristournable (obligatoire si TPF et/ou pour la centrale COMAFRANC)'
 			, 'data' => ''
-			, 'maxLength' => 22 // 15\6
+			, 'maxLength' => 15 // 15\6
+			, 'maxPrecision' => 6
 		)
 		, 20 => array(
 			'label' => 'Montant net ristournable (obligatoire si TPF et/ou pour la centrale COMAFRANC)'
 			, 'data' => ''
-			, 'maxLength' => 20 // 17\2
+			, 'maxLength' => 17 // 17\2
+			, 'maxPrecision' => 2
 		)
 		, 21 => array(
 			'label' => 'Référence ligne du composé (obligatoire si c\'est un composant)'
@@ -1099,7 +1109,8 @@ class EDIFormatFACChorusSegmentLIG extends EDIFormatSegment
 		, 27 => array(
 			'label' => 'Prix public TTC (secteur livre)'
 			, 'data' => ''
-			, 'maxLength' => 22 // 15\6
+			, 'maxLength' => 15 // 15\6
+			, 'maxPrecision' => 6
 		)
 		, 28 => array(
 			'label' => 'Numéro commande d\'origine'
@@ -1119,12 +1130,14 @@ class EDIFormatFACChorusSegmentLIG extends EDIFormatSegment
 		, 31 => array(
 			'label' => 'Prix brut remisé'
 			, 'data' => ''
-			, 'maxLength' => 22 // 15\6
+			, 'maxLength' => 15 // 15\6
+			, 'maxPrecision' => 6
 		)
 		, 32 => array(
 			'label' => 'Montant brut remisé'
 			, 'data' => ''
-			, 'maxLength' => 20 // 17\2
+			, 'maxLength' => 17 // 17\2
+			, 'maxPrecision' => 2
 		)
 		, 33 => array(
 			'label' => 'Date commande d\'origin JJ/MM/AAAA'
@@ -1139,7 +1152,8 @@ class EDIFormatFACChorusSegmentLIG extends EDIFormatSegment
 		, 35 => array(
 			'label' => 'Base Prix unitaire net'
 			, 'data' => ''
-			, 'maxLength' => 24 // 17\6
+			, 'maxLength' => 17 // 17\6
+			, 'maxPrecision' => 6
 		)
 		, 36 => array(
 			'label' => 'Date début livraison JJ/MM/AAAA'
@@ -1169,7 +1183,8 @@ class EDIFormatFACChorusSegmentLIG extends EDIFormatSegment
 		, 41 => array(
 			'label' => 'Quantité livrée'
 			, 'data' => ''
-			, 'maxLength' => 14 // 10\3
+			, 'maxLength' => 10 // 10\3
+			, 'maxPrecision' => 3
 		)
 		, 42 => array(
 			'label' => 'Unité de quantité livrée (cf table MEA.4)'
@@ -1222,8 +1237,9 @@ class EDIFormatFACChorusSegmentLID extends EDIFormatSegment
 		)
 		, 6 => array(
 			'label' => 'Pourcentage ou montant unitaire'
-			, 'data' => 'sprintf("%12.6f", $object->remise_percent)'
-			, 'maxLength' => 19 // 12\6
+			, 'data' => 'price2num($object->remise_percent)'
+			, 'maxLength' => 12 // 12\6
+			, 'maxPrecision' => 6
 			, 'required' => true
 		)
 		, 7 => array(
@@ -1239,19 +1255,22 @@ class EDIFormatFACChorusSegmentLID extends EDIFormatSegment
 		)
 		, 9 => array(
 			'label' => 'Taux de TVA de la dégression tarifaire ou taxe parafiscale'
-			, 'data' => 'sprintf("%5.2f", $object->tva_tx)'
-			, 'maxLength' => 8 // 5\2
+			, 'data' => 'price2num($object->tva_tx)'
+			, 'maxLength' => 5 // 5\2
+			, 'maxPrecision' => 2
 			, 'required' => true
 		)
 		, 10 => array(
 			'label' => 'Montant de la dégression, unitaire (si pourcentage indiqué en position 6)'
-			, 'data' => 'sprintf("%12.6f", $object->subprice * $object->remise_percent)'
-			, 'maxLength' => 19 // 12\6
+			, 'data' => 'price2num($object->subprice * $object->remise_percent / 100)'
+			, 'maxLength' => 12 // 12\6
+			, 'maxPrecision' => 6
 		)
 		, 11 => array(
 			'label' => 'Montant base de calcul (montant sur lequel est appliqué la dégression)'
-			, 'data' => 'sprintf("%12.6f", $object->subprice)'
-			, 'maxLength' => 19 // 12\6
+			, 'data' => 'price2num($object->subprice)'
+			, 'maxLength' => 12 // 12\6
+			, 'maxPrecision' => 6
 			, 'required' => true
 		)
 		, 12 => array(
@@ -1305,20 +1324,23 @@ class EDIFormatFACChorusSegmentTVA extends EDIFormatSegment
 		)
 		, 2 => array(
 			'label' => 'Taux de TVA'
-			, 'data' => 'sprintf("%5.2f", price2num($key))'
-			, 'maxLength' => 8 // 5\2
+			, 'data' => 'price2num($key)'
+			, 'maxLength' => 5 // 5\2
+			, 'maxPrecision' => 2
 			, 'required' => true
 		)
 		, 3 => array(
 			'label' => 'Montant total soumis à TVA'
-			, 'data' => 'sprintf("%10.2f", price2num($object->totalHT))'
-			, 'maxLength' => 13 // 10\2
+			, 'data' => 'price2num($object->totalHT)'
+			, 'maxLength' => 10 // 10\2
+			, 'maxPrecision' => 2
 			, 'required' => true
 		)
 		, 4 => array(
 			'label' => 'Montant de la TVA'
-			, 'data' => 'sprintf("%10.2f", price2num($object->totalTVA))'
-			, 'maxLength' => 13 // 10\2
+			, 'data' => 'price2num($object->totalTVA)'
+			, 'maxLength' => 10 // 10\2
+			, 'maxPrecision' => 2
 			, 'required' => true
 		)
 		, 5 => array(
@@ -1351,56 +1373,66 @@ class EDIFormatFACChorusSegmentPIE extends EDIFormatSegment
 		)
 		, 2 => array(
 			'label' => 'Montant total hors taxes'
-			, 'data' => 'sprintf("%10.2f", price2num($object->total_ht))'
-			, 'maxLength' => 13 // 10\2
+			, 'data' => 'price2num($object->total_ht)'
+			, 'maxLength' => 10 // 10\2
+			, 'maxPrecision' => 2
 			, 'required' => true
 		)
 		, 3 => array(
 			'label' => 'Montant total TVA'
-			, 'data' => 'sprintf("%10.2f", price2num($object->total_tva))'
-			, 'maxLength' => 13 // 10\2
+			, 'data' => 'price2num($object->total_tva)'
+			, 'maxLength' => 10 // 10\2
+			, 'maxPrecision' => 2
 			, 'required' => true
 		)
 		, 4 => array(
 			'label' => 'Montant total toutes taxes comprises'
-			, 'data' => 'sprintf("%10.2f", price2num($object->total_ttc))'
-			, 'maxLength' => 13 // 10\2
+			, 'data' => 'price2num($object->total_ttc)'
+			, 'maxLength' => 10 // 10\2
+			, 'maxPrecision' => 2
 			, 'required' => true
 		)
 		, 5 => array(
 			'label' => 'Montant total net ristournable (obligatoire si TPF)'
 			, 'data' => ''
-			, 'maxLength' => 13 // 10\2
+			, 'maxLength' => 10 // 10\2
+			, 'maxPrecision' => 2
 		)
 		, 6 => array(
 			'label' => 'Montant total TPF (obligatoire si TPF)'
 			, 'data' => ''
-			, 'maxLength' => 13 // 10\2
+			, 'maxLength' => 10 // 10\2
+			, 'maxPrecision' => 2
 		)
 		, 7 => array(
 			'label' => 'Montant total des taxes (obligatoire si TPF)'
 			, 'data' => ''
-			, 'maxLength' => 13 // 10\2
+			, 'maxLength' => 10 // 10\2
+			, 'maxPrecision' => 2
 		)
 		, 8 => array(
 			'label' => 'Montant Total Ristournable Ligne (obligatoire pour la centrale COMAFRANC)'
 			, 'data' => ''
-			, 'maxLength' => 113 // 10\2
+			, 'maxLength' => 10 // 10\2
+			, 'maxPrecision' => 2
 		)
 		, 9 => array(
 			'label' => 'Montant Total Consigne (obligatoire si gestion consigne)'
 			, 'data' => ''
-			, 'maxLength' => 13 // 10\2
+			, 'maxLength' => 10 // 10\2
+			, 'maxPrecision' => 2
 		)
 		, 10 => array(
 			'label' => 'Montant Acompte'
 			, 'data' => '' // TODO
-			, 'maxLength' => 13 // 10\2
+			, 'maxLength' => 10 // 10\2
+			, 'maxPrecision' => 2
 		)
 		, 11 => array(
 			'label' => 'Montant Payable (obligatoire si gestion acompte)'
 			, 'data' => '' // TODO
-			, 'maxLength' => 13 // 10\2
+			, 'maxLength' => 10 // 10\2
+			, 'maxPrecision' => 2
 		)
 	);
 }

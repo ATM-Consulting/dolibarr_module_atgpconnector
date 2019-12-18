@@ -1,5 +1,7 @@
 <?php
 
+dol_include_once('/atgpconnector/lib/atgpconnector.lib.php');
+
 abstract class EDIFormat
 {
 	public static $remotePath = '/';
@@ -237,9 +239,20 @@ abstract class EDIFormatSegment
 		foreach(static::$TFields as $index => $TFieldDescritor)
 		{
 			$data = eval('return ' . $TFieldDescritor['data'] . ';'); // Peut utiliser $object, $key, $conf et $mysoc
+
+			if (! is_null($data) && $TFieldDescritor['maxLength'] > 0 && $TFieldDescritor['maxPrecision'] > 0)
+			{
+				$data = atgpConnectorGetNumericField($data, $TFieldDescritor['maxLength'], $TFieldDescritor['maxPrecision']);
+			}
+
 			$data = trim($data);
 			$data = str_replace(ATGPCONNECTOR_CSV_SEPARATOR, ' ', $data);
-			$data = substr($data, 0, $TFieldDescritor['maxLength']);
+
+			if ($TFieldDescritor['maxLength'] > 0)
+			{
+				$data = substr($data, 0, $TFieldDescritor['maxLength']);
+			}
+
 			$data = mb_convert_encoding($data, 'ISO-8859-1', mb_detect_encoding($data));
 			$TData[] = $data;
 		}

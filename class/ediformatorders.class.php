@@ -1460,8 +1460,9 @@ class EDIFormatOrdersSegmentLIG extends EDIFormatSegment
 		),
 		9  => array(
 			'label'       => 'Prix unitaire net'
-			, 'data'      => 'sprintf("%17.6f", price2num($object->qty > 0 ? $object->total_ht / $object->qty : 0))'
-			, 'maxLength' => 24
+			, 'data'      => 'price2num($object->qty > 0 ? $object->total_ht / $object->qty : 0)'
+			, 'maxLength' => 17 // 17\6
+			, 'maxPrecision' => 6
 		),
 		10 => array(
 			'label'       => 'Libellé produit'

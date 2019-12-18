@@ -103,3 +103,22 @@ function getFormConfirmatgpconnector(&$PDOdb, &$form, &$object, $action)
 
     return $formconfirm;
 }
+
+
+function atgpConnectorGetNumericField($value, $maxLength, $maxPrecision)
+{
+	$valueIntegerPart = strval(floor($value));
+	
+	$integerPartLength = strlen($valueIntegerPart);
+
+	$truePrecision = $maxPrecision;
+	
+	if ($integerPartLength + $maxPrecision + 1 > $maxLength)
+	{
+		$truePrecision = $maxLength - $integerPartLength - 1;
+	}
+	
+	$integerPartLength = max($maxLength - $truePrecision - 1, $integerPartLength);
+
+	return sprintf('%' . $integerPartLength . '.' . $truePrecision . 'f', $value);
+}
