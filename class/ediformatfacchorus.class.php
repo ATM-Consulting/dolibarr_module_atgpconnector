@@ -192,24 +192,25 @@ class EDIFormatFACChorus extends EDIFormat
 
 
 		// Check required fields
-		if (empty($this->object->_TPAD['SU']->context['GLNcode']) || ctype_space($this->object->_TPAD['SU']->context['GLNcode']))
+		// Test with name because id is empty for mysoc
+		if (empty($this->object->_TPAD['SU']->name))
 		{
-			$this->appendError('ATGPC_ErrorRequiredField', $this->object->ref, 'Code GLN vendeur');
+			$this->appendError('ATGPC_ErrorRequiredField', $this->object->ref, 'Vendeur');
 		}
 
-		if (empty($this->object->_TPAD['IV']->context['GLNcode']) || ctype_space($this->object->_TPAD['IV']->context['GLNcode']))
+		if (empty($this->object->_TPAD['IV']->name))
 		{
-			$this->appendError('ATGPC_ErrorRequiredField', $this->object->ref, 'Code GLN payeur');
+			$this->appendError('ATGPC_ErrorRequiredField', $this->object->ref, 'Payeur');
 		}
 
-		if (empty($this->object->_TPAD['BY']->context['GLNcode']) || ctype_space($this->object->_TPAD['BY']->context['GLNcode']))
+		if (empty($this->object->_TPAD['BY']->name))
 		{
-			$this->appendError('ATGPC_ErrorRequiredField', $this->object->ref, 'Code GLN acheteur');
+			$this->appendError('ATGPC_ErrorRequiredField', $this->object->ref, 'Acheteur');
 		}
 
-		if (empty($this->object->_TPAD['DP']->context['GLNcode']) || ctype_space($this->object->_TPAD['DP']->context['GLNcode']))
+		if (empty($this->object->_TPAD['DP']->name))
 		{
-			$this->appendError('ATGPC_ErrorRequiredField', $this->object->ref, 'Code GLN destinataire');
+			$this->appendError('ATGPC_ErrorRequiredField', $this->object->ref, 'Destinataire');
 		}
 
 
