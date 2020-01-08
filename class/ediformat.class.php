@@ -60,8 +60,14 @@ abstract class EDIFormat
 				if(is_array($segmentObj))
 				{
 					foreach ($segmentObj as $key => $segmentSubObj) {
-						$TData = $segmentInstance->get($segmentSubObj, $key);
-						fwrite($csvHandle, implode(ATGPCONNECTOR_CSV_SEPARATOR, $TData) . PHP_EOL);
+						$segmentFilledCorrectly = $segmentInstance->fillData($segmentSubObj, $key);
+
+						if (! $segmentFilledCorrectly)
+						{
+							$this->appendErrors($segmentInstance->TErrors);
+						}
+
+						fwrite($csvHandle, implode(ATGPCONNECTOR_CSV_SEPARATOR, $segmentInstance->TData) . PHP_EOL);
 
 						if (isset($TSegmentDescriptor['LID'])) {
 							$val = eval('return ' . $TSegmentDescriptor['LID']['object'] . ';');
@@ -77,8 +83,14 @@ abstract class EDIFormat
 			}
 			else
 			{
-				$TData = $segmentInstance->get($segmentObj);
-				fwrite($csvHandle, implode(ATGPCONNECTOR_CSV_SEPARATOR, $TData) . PHP_EOL);
+				$segmentFilledCorrectly = $segmentInstance->fillData($segmentObj);
+
+				if (! $segmentFilledCorrectly)
+				{
+					$this->appendErrors($segmentInstance->TErrors);
+				}
+
+				fwrite($csvHandle, implode(ATGPCONNECTOR_CSV_SEPARATOR, $segmentInstance->TData) . PHP_EOL);
 
 				if (isset($TSegmentDescriptor['LID']))
 				{
@@ -100,6 +112,12 @@ abstract class EDIFormat
 		fclose($csvHandle);
 
 		$this->afterCSVGenerated($tmpCSVPath);
+
+		if (! empty($this->TErrors))
+		{
+			// L'appelant doit aller regarder le contenu de TErrors pour générer un message d'erreur
+			return false;
+		}
 
 		// TODO A bouger dans une méthode send()
 		if(empty($conf->global->ATGPCONNECTOR_FTP_DISABLE_ALL_TRANSFERS)) // conf cachée
@@ -150,15 +168,27 @@ abstract class EDIFormat
 		if(! empty($TSegmentDescriptor['multiple'])) {
 			if (is_array($segmentObj)) {
 				foreach ($segmentObj as $key => $segmentSubObj) {
-					$TData = $segmentInstance->get($segmentSubObj, $key);
-					fwrite($csvHandle, implode(ATGPCONNECTOR_CSV_SEPARATOR, $TData) . PHP_EOL);
+					$segmentFilledCorrectly = $segmentInstance->fillData($segmentSubObj, $key);
+
+					if (! $segmentFilledCorrectly)
+					{
+						$this->appendErrors($segmentInstance->TErrors);
+					}
+
+					fwrite($csvHandle, implode(ATGPCONNECTOR_CSV_SEPARATOR, $segmentInstance->TData) . PHP_EOL);
 				}
 			}
 		}
 		else
 		{
-			$TData = $segmentInstance->get($segmentObj);
-			fwrite($csvHandle, implode(ATGPCONNECTOR_CSV_SEPARATOR, $TData) . PHP_EOL);
+			$segmentFilledCorrectly = $segmentInstance->fillData($segmentObj);
+
+			if (! $segmentFilledCorrectly)
+			{
+				$this->appendErrors($segmentInstance->TErrors);
+			}
+
+			fwrite($csvHandle, implode(ATGPCONNECTOR_CSV_SEPARATOR, $segmentInstance->TData) . PHP_EOL);
 		}
 	}
 
@@ -171,14 +201,26 @@ abstract class EDIFormat
         {
             foreach($segmentObj as $key => $segmentSubObj)
             {
-                $TData = $segmentInstance->get($segmentSubObj, $key);
-                fwrite($csvHandle, implode(ATGPCONNECTOR_CSV_SEPARATOR, $TData) . PHP_EOL);
+				$segmentFilledCorrectly = $segmentInstance->fillData($segmentSubObj, $key);
+
+				if (! $segmentFilledCorrectly)
+				{
+					$this->appendErrors($segmentInstance->TErrors);
+				}
+
+                fwrite($csvHandle, implode(ATGPCONNECTOR_CSV_SEPARATOR, $segmentInstance->TData) . PHP_EOL);
             }
         }
         else
         {
-            $TData = $segmentInstance->get($segmentObj);
-            fwrite($csvHandle, implode(ATGPCONNECTOR_CSV_SEPARATOR, $TData) . PHP_EOL);
+			$segmentFilledCorrectly = $segmentInstance->fillData($segmentObj);
+
+			if (! $segmentFilledCorrectly)
+			{
+				$this->appendErrors($segmentInstance->TErrors);
+			}
+
+            fwrite($csvHandle, implode(ATGPCONNECTOR_CSV_SEPARATOR, $segmentInstance->TData) . PHP_EOL);
         }
     }
 
@@ -222,44 +264,65 @@ abstract class EDIFormat
 
 		$this->TErrors[] = call_user_func_array(array($langs, 'trans'), func_get_args());
 	}
+
+
+	protected function appendErrors($TNewErrors)
+	{
+		$this->TErrors = array_merge($this->TErrors, $TNewErrors);
+	}
 }
 
 
 abstract class EDIFormatSegment
 {
 	public static $TFields = array();
+	public $TData = array();
 	public $TErrors = array();
 
-	public final function get($object, $key = null)
+	public final function fillData($object, $key = null)
 	{
-		global $mysoc, $conf;
+		global $mysoc, $conf, $langs;
 
-		$TData = array();
+		$this->TData = array();
+
+		$TMatches = array();
+		preg_match('/^(EDIFormat)(.+)(Segment)(.+)$/', get_class($this), $TMatches);
+
+		$formatName = $TMatches[2];
+		$segmentName = $TMatches[4];
 
 		foreach(static::$TFields as $index => $TFieldDescritor)
 		{
-			$data = eval('return ' . $TFieldDescritor['data'] . ';'); // Peut utiliser $object, $key, $conf et $mysoc
+			$fieldValue = eval('return ' . $TFieldDescritor['data'] . ';'); // Peut utiliser $object, $key, $conf et $mysoc
 
-			if (! is_null($data) && $TFieldDescritor['maxLength'] > 0 && $TFieldDescritor['maxPrecision'] > 0)
+			if (! is_null($fieldValue) && $TFieldDescritor['maxLength'] > 0 && $TFieldDescritor['maxPrecision'] > 0)
 			{
-				$data = atgpConnectorGetNumericField($data, $TFieldDescritor['maxLength'], $TFieldDescritor['maxPrecision']);
+				$fieldValue = atgpConnectorGetNumericField($fieldValue, $TFieldDescritor['maxLength'], $TFieldDescritor['maxPrecision']);
 			}
 
-			$data = trim($data);
-			$data = str_replace(ATGPCONNECTOR_CSV_SEPARATOR, ' ', $data);
+			$fieldValue = trim($fieldValue);
+			$fieldValue = str_replace(ATGPCONNECTOR_CSV_SEPARATOR, ' ', $fieldValue);
 
 			if ($TFieldDescritor['maxLength'] > 0)
 			{
-				$data = substr($data, 0, $TFieldDescritor['maxLength']);
+				$fieldValue = substr($fieldValue, 0, $TFieldDescritor['maxLength']);
 			}
 
-			$data = mb_convert_encoding($data, 'ISO-8859-1', mb_detect_encoding($data));
-			$TData[] = $data;
+			$fieldValue = mb_convert_encoding($fieldValue, 'ISO-8859-1', mb_detect_encoding($fieldValue));
+
+/*
+			Je laisse la vérification des champs requis désactivée : elle est trop violente à mettre en place pour des
+			clients qu'on n'a pas formés à ça. La plupart des raisons internes pour lesquelles on ne fournit pas
+			correctement la donnée ont été corrigées. - MdLL, 8 janvier 2020
+			if (strlen($fieldValue) <= 0 && ! empty($TFieldDescritor['required']))
+			{
+				$this->TErrors[] = $langs->trans('ErrorFieldRequired', $TFieldDescritor['label'] . ' (format ' . $formatName . ', segment ' . $segmentName . ', champ ' . $index . ')');
+			}
+*/
+			$this->TData[] = $fieldValue;
 		}
 
-		// TODO Gestion d'erreurs
-
-		return $TData;
+		return empty($this->TErrors);
 	}
 }
 
