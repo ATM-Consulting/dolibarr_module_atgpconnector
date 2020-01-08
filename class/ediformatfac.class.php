@@ -101,12 +101,13 @@ class EDIFormatFAC extends EDIFormat
 		$this->parseRCS();
 
 		// Linked objects & dates
+		// Tableau initialisé vide pour n'avoir que les champs existants
 		$TDTM = array(
-			'11' => '' // Expédition
-			, '35' => '' // Livraison
+			// '11' => '' // Expédition
+			// , '35' => '' // Livraison
 			// TODO , '263D' => '' // Début de période de facturation
 			// TODO , '263F' => '' // Fin de période de facturation
-			, '69' => '' // Livraison promise
+			// , '69' => '' // Livraison promise
 		);
 
 		if (! empty($this->object->linkedObjects['shipping'])) {
@@ -371,19 +372,21 @@ class EDIFormatFAC extends EDIFormat
 	{
 		global $mysoc, $conf;
 
+		// Tableau initialisé vide pour n'avoir que les champs existants
 		$TPAD = array(
-			'IV' => null // Facturé à
-			, 'SU' => null // Facturé par
-			, 'BY' => null // Commandé par
-			, 'DP' => null // Livré à
+			// 'IV' => null // Facturé à
+			// , 'SU' => null // Facturé par
+			// , 'BY' => null // Commandé par
+			// , 'DP' => null // Livré à
 			// TODO , 'UC' => null // Destinataire final
 			// TODO , 'CO' => null // Siège social vendeur
-			, 'RE' => null // Régler à
+			// , 'RE' => null // Régler à
 		);
 
 		foreach ($this->object->_TContacts as $contactDescriptor)
 		{
-			if ($contactDescriptor['source'] != 'external') // TODO Voir pour le cas où la société qui établit la facture est différent de celle qui reçoit le paiement
+			// TODO Voir pour le cas où la société qui établit la facture est différent de celle qui reçoit le paiement
+			if ($contactDescriptor['source'] != 'external')
 			{
 				continue;
 			}
@@ -403,7 +406,8 @@ class EDIFormatFAC extends EDIFormat
 					break;
 
 				default:
-					continue;
+					// dans un switch, continue est équivalent à break => on passe 2 en paramètre pour continue le foreach
+					continue 2;
 			}
 
 			if (! empty($TPAD[$type]))
@@ -983,7 +987,7 @@ class EDIFormatFACSegmentLIG extends EDIFormatSegment
 		)
 		, 3 => array(
 			'label' => 'Code EAN produit'
-			, 'data' => '$object->product_barcode'
+			, 'data' => '! empty($object->product_barcode) ? $object->product_barcode : $object->ref'
 			, 'maxLength' => 14
 			, 'required' => true
 		)
