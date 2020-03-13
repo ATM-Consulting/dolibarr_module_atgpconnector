@@ -214,6 +214,32 @@ class EDIFormatFACChorus extends EDIFormat
 			$this->appendError('ATGPC_ErrorRequiredField', $this->object->ref, 'Destinataire');
 		}
 
+		if (!empty($this->object->thirdparty->array_options['options_code_service']) && $this->object->thirdparty->array_options['options_code_service'] === '2')
+		{
+			if (empty($this->object->thirdparty->_chorusServiceCode) || ctype_space($this->object->thirdparty->_chorusServiceCode))
+			{
+				$this->appendError('ATGPC_ErrorRequiredField', $this->object->ref, 'Code service');
+			}
+		}
+
+		if (!empty($this->object->thirdparty->array_options['options_n_eng']) && $this->object->thirdparty->array_options['options_n_eng'] === '2')
+		{
+			if (empty($this->object->object_chorus->ref_client) || ctype_space($this->object->object_chorus->ref_client))
+			{
+				$this->appendError('ATGPC_ErrorRequiredField', $this->object->ref, 'Numéro d\'engagement');
+			}
+		}
+
+		if (!empty($this->object->thirdparty->array_options['options_cs_engage']) && $this->object->thirdparty->array_options['options_cs_engage'] === '2')
+		{
+			if (
+				(empty($this->object->thirdparty->_chorusServiceCode) || ctype_space($this->object->thirdparty->_chorusServiceCode))
+				&& (empty($this->object->object_chorus->ref_client) || ctype_space($this->object->object_chorus->ref_client))
+			) {
+				$this->appendError('ATGPC_ErrorRequiredField', $this->object->ref, 'Code service ou Numéro d\'engagement');
+			}
+		}
+
 
 		// TVA
 
